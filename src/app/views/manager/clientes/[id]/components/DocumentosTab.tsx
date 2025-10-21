@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Download, Trash2, Eye } from "lucide-react";
+import { Upload, Download, Trash2, Eye, File } from "lucide-react";
 import CardIcon from "@/components/visual/CardIcon";
 import Button from "@/components/visual/Button";
 import Modal from "@/components/Modal";

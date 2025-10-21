@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Input from '@/components/visual/Input';
-import Button from '@/components/visual/Button';
-import Select from '@/components/visual/Select';
+import React, { useState } from "react";
+import Input from "@/components/visual/Input";
+import Button from "@/components/visual/Button";
+import Select from "@/components/visual/Select";
 
 export default function ShowcasePage() {
-  const [inputValue, setInputValue] = useState('');
-  const [selectValue, setSelectValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
+  const [selectValue, setSelectValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const selectOptions = [
-    { value: 'opcao1', label: 'Primeira Opção' },
-    { value: 'opcao2', label: 'Segunda Opção' },
-    { value: 'opcao3', label: 'Terceira Opção' },
-    { value: 'opcao4', label: 'Quarta Opção' },
-    { value: 'opcao5', label: 'Quinta Opção' },
+    { value: "opcao1", label: "Primeira Opção" },
+    { value: "opcao2", label: "Segunda Opção" },
+    { value: "opcao3", label: "Terceira Opção" },
+    { value: "opcao4", label: "Quarta Opção" },
+    { value: "opcao5", label: "Quinta Opção" },
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,22 +67,29 @@ export default function ShowcasePage() {
             isLoading={isLoading}
             onClick={handleClick}
           >
-            {isLoading ? 'Carregando...' : 'Clique aqui'}
+            {isLoading ? "Carregando..." : "Clique aqui"}
           </Button>
         </div>
 
         {/* Valores Atuais */}
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="text-gray-700 font-semibold mb-3 text-sm">📊 Valores Atuais</h4>
+          <h4 className="text-gray-700 font-semibold mb-3 text-sm">
+            📊 Valores Atuais
+          </h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Input:</span>
-              <span className="font-mono text-gray-900">"{inputValue || 'vazio'}"</span>
+              <span className="font-mono text-gray-900">
+                &quot;{inputValue || "vazio"}&quot;
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Select:</span>
               <span className="font-mono text-gray-900">
-                {selectValue ? selectOptions.find(opt => opt.value === selectValue)?.label : 'nenhuma seleção'}
+                {selectValue
+                  ? selectOptions.find((opt) => opt.value === selectValue)
+                      ?.label
+                  : "nenhuma seleção"}
               </span>
             </div>
           </div>
@@ -107,8 +114,8 @@ export default function ShowcasePage() {
   options={selectOptions}
 />
 
-<Button 
-  variant="primary" 
+<Button
+  variant="primary"
   fullWidth
   isLoading={isLoading}
   onClick={handleClick}
@@ -120,10 +127,7 @@ export default function ShowcasePage() {
 
         {/* Navigation */}
         <div className="text-center mt-6">
-          <Button
-            variant="outline"
-            onClick={() => window.history.back()}
-          >
+          <Button variant="outline" onClick={() => window.history.back()}>
             ← Voltar
           </Button>
         </div>

@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { planId: string } },
+  { params }: { params: Promise<{ planId: string }> },
 ) {
   try {
-    const raw = params.planId;
+    const { planId: raw } = await params;
     const planId = decodeURIComponent((raw || "").trim());
 
     if (!planId) {
@@ -20,10 +20,7 @@ export async function GET(
     const plan = await prisma.plan.findFirst({
       where: {
         active: true,
-        OR: [
-          { id: planId },
-          { name: { equals: planId, mode: "insensitive" } },
-        ],
+        OR: [{ id: planId }, { name: { equals: planId, mode: "insensitive" } }],
       },
     });
 

@@ -40,6 +40,9 @@ const StyledSelect = forwardRef<HTMLDivElement, StyledSelectProps>(
       value || null,
     );
     const selectRef = useRef<HTMLDivElement>(null);
+    const listboxId = useRef(
+      `listbox-${Math.random().toString(36).substr(2, 9)}`,
+    ).current;
 
     useEffect(() => {
       setSelectedValue(value || null);
@@ -136,6 +139,7 @@ const StyledSelect = forwardRef<HTMLDivElement, StyledSelectProps>(
             }}
             aria-haspopup="listbox"
             aria-expanded={isOpen}
+            aria-controls={listboxId}
             aria-invalid={!!error}
             aria-required={required}
           >
@@ -150,7 +154,7 @@ const StyledSelect = forwardRef<HTMLDivElement, StyledSelectProps>(
             />
           </div>
 
-          <div className={optionsClasses} role="listbox">
+          <div className={optionsClasses} role="listbox" id={listboxId}>
             {options.map((option) => (
               <div
                 key={option.value}

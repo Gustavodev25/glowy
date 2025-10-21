@@ -109,21 +109,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
+    const auth = await verifyAuth(request);
+    if (!auth) {
       return NextResponse.json(
         { success: false, error: "Token de autenticação necessário" },
         { status: 401 },
       );
     }
 
-    const userId = await verifyToken(token);
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: "Token inválido" },
-        { status: 401 },
-      );
-    }
+    const userId = auth.userId;
 
     const { id: avaliacaoId } = await params;
     const body = await request.json();
@@ -203,21 +197,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (!token) {
+    const auth = await verifyAuth(request);
+    if (!auth) {
       return NextResponse.json(
         { success: false, error: "Token de autenticação necessário" },
         { status: 401 },
       );
     }
 
-    const userId = await verifyToken(token);
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Token inválido" },
-        { status: 401 },
-      );
-    }
+    const userId = auth.userId;
 
     const { id: avaliacaoId } = await params;
 

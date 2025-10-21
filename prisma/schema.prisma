@@ -1,0 +1,611 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String  @id @default(uuid())
+  nome        String
+  email       String  @unique
+  senha       String // hash Argon2id
+  tipoUsuario String? // "dono" ou "usuario"
+  telefone    String?
+  isAdmin     Boolean @default(false) // Administrador do sistema
+
+  // Foto de perfil (Cloudinary)
+  avatarUrl      String?
+  avatarPublicId String?
+
+  // 2FA (TOTP)
+  twoFactorEnabled     Boolean   @default(false)
+  twoFactorSecret      String?
+  twoFactorConfirmedAt DateTime?
+  twoFactorMethod      String?   // 'totp' | 'whatsapp'
+  whatsappPhoneE164    String?
+  whatsappOtpHash      String?
+  whatsappOtpExpiresAt DateTime?
+  whatsappOtpAttempts  Int       @default(0)
+
+  // Email de recuperação
+  recoveryEmail         String?
+  recoveryEmailVerified Boolean @default(false)
+
+  lastPasswordChange DateTime?
+
+  // AbacatePay Integration
+  abacatePayCustomerId String? @unique @map("abacatepay_customer_id")
+
+  // Onboarding
+  onboardingCompleted Boolean @default(false) @map("onboarding_completed")
+
+  ativo               Boolean   @default(true)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relacionamentos
+  empresas          Empresa[]
+  funcionarios      Funcionario[]
+  sessions          Session[]
+  loginHistory      LoginHistory[]
+  securityQuestions SecurityQuestion[]
+  activityLogs      ActivityLog[]
+  paymentMethods    PaymentMethod[]
+  companySettings   CompanySettings?
+
+  // Sistema de Avaliações
+  avaliacoes        Avaliacao[] @relation("AvaliacoesCliente")
+  relatoriosEnviados RelatorioAvaliacao[] @relation("RelatoriosUsuario")
+  relatoriosResolvidos RelatorioAvaliacao[] @relation("RelatoriosResolvidoPor")
+
+  // Novos relacionamentos
+  documentosUpload Documento[] @relation("DocumentoUploadedBy")
+  // respostasFormulario RespostaFormulario[] @relation("FormularioPreenchidoPor")
+
+  @@map("users")
+}
+
+// Sessões ativas
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  device       String?
+  browser      String?
+  os           String?
+  ip           String?
+  location     String?
+  lastActivity DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Histórico de login
+model LoginHistory {
+  id            String   @id @default(uuid())
+  userId        String
+  device        String?
+  browser       String?
+  os            String?
+  ip            String?
+  location      String?
+  success       Boolean
+  failureReason String?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_history")
+}
+
+// Perguntas de segurança
+model SecurityQuestion {
+  id        String   @id @default(uuid())
+  userId    String
+  question  String
+  answer    String // hash da resposta
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("security_questions")
+}
+
+// Logs de atividades
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String // "password_change", "email_change", "2fa_enabled", etc
+  description String
+  ip          String?
+  device      String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
+
+model Empresa {
+  id     String @id @default(uuid())
+  donoId String
+
+  // Dados do documento
+  tipoDocumento String // "CNPJ" ou "CPF"
+  documento     String  @unique
+  razaoSocial   String?
+  nomeFantasia  String?
+
+  // Dados da empresa
+  nomeEmpresa String
+  descricao   String?
+
+  // Contato
+  telefone String
+  email    String
+
+  // Endereço
+  cep              String
+  logradouro       String
+  numero           String
+  complemento      String?
+  bairro           String
+  cidade           String
+  estado           String
+  enderecoCompleto String?
+
+  // Logo (Cloudinary)
+  logoUrl      String?
+  logoPublicId String?
+
+  // Banner (Cloudinary)
+  bannerUrl      String?
+  bannerPublicId String?
+
+  // Status
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  dono         User          @relation(fields: [donoId], references: [id], onDelete: Cascade)
+  servicos     Servico[]
+  clientes     Cliente[]
+  agendamentos Agendamento[]
+  funcionarios Funcionario[]
+
+  // Sistema de Avaliações
+  avaliacoes   Avaliacao[]
+  respostas    RespostaAvaliacao[]
+
+  // Novos relacionamentos
+  // formulariosPersonalizados FormularioPersonalizado[]
+  documentos Documento[]
+
+  @@map("empresas")
+}
+
+model Servico {
+  id        String   @id @default(uuid())
+  empresaId String
+  nome      String
+  descricao String?
+  duracao   Int // em minutos
+  preco     Decimal  @db.Decimal(10, 2)
+  imageUrl  String?  @map("image_url") // URL da imagem do serviço
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  agendamentos Agendamento[]
+  avaliacoes   Avaliacao[]
+
+  @@map("servicos")
+}
+
+model Cliente {
+  id        String   @id @default(uuid())
+  empresaId String
+  nome      String
+  email     String?
+  telefone  String
+  cpf       String?
+  // avatarUrl String? // Comentado até executar migration SQL
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  agendamentos Agendamento[]
+  documentos   Documento[]
+  // respostasFormulario RespostaFormulario[]
+
+  @@map("clientes")
+}
+
+model Funcionario {
+  id        String   @id @default(uuid())
+  empresaId String
+  userId    String
+  cargo     String?
+  salario   Decimal? @db.Decimal(10, 2)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("funcionarios")
+}
+
+model Agendamento {
+  id              String   @id @default(uuid())
+  empresaId       String
+  servicoId       String
+  clienteId       String
+  dataHora        DateTime
+  duracao         Int // em minutos
+  valor           Decimal  @db.Decimal(10, 2)
+  status          String   @default("agendado") // "agendado", "confirmado", "cancelado", "concluido"
+  observacoes     String?
+  formaPagamento  String?  // "dinheiro", "pix", "debito", "credito"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  servico Servico @relation(fields: [servicoId], references: [id], onDelete: Restrict)
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  // Novos relacionamentos
+  documentos Documento[]
+  // respostasFormulario RespostaFormulario[]
+
+  @@map("agendamentos")
+}
+
+// Planos de assinatura
+model Plan {
+  id          String   @id @default(uuid())
+  name        String // "Básico", "Profissional", "Empresarial"
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  interval    String   @default("MONTHLY") // MONTHLY, YEARLY
+
+  // Funcionalidades do plano
+  features    String[] // Array de recursos em texto
+
+  // Limites e permissões
+  maxProfissionais      Int     @default(1) // Quantos profissionais podem agendar
+  maxClientes           Int     @default(100) // Limite de clientes
+  maxAgendamentosMes    Int     @default(50) // Limite de agendamentos por mês
+  permiteMultiEmpresa   Boolean @default(false) // Permite múltiplas empresas
+  permiteRelatorios     Boolean @default(false) // Acesso a relatórios
+  permiteIntegracoes    Boolean @default(false) // Integrações com outras plataformas
+  permiteWhatsapp       Boolean @default(false) // Notificações WhatsApp
+  permiteSms            Boolean @default(false) // Notificações SMS
+  permiteAgendaOnline   Boolean @default(true) // Agenda online pública
+  permitePersonalizacao Boolean @default(false) // Personalização de marca
+
+  maxEmpresas Int      @default(1)
+  maxUsers    Int      @default(1)
+  recommended Boolean  @default(false) // Plano recomendado
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+// Assinaturas dos usuários
+model Subscription {
+  id           String    @id @default(uuid())
+  userId       String
+  planId       String
+  abacatePayId String?   @unique @map("abacatepay_id") // ID da assinatura/billing no AbacatePay
+  status       String    @default("pending") // pending, active, cancelled, suspended
+  paymentType  String?  // PIX, CREDIT_CARD
+  // Ciclo da assinatura selecionado no checkout
+  cycle        String    @default("MONTHLY") // MONTHLY, YEARLY
+  // Valor contratado no momento da assinatura (pode refletir desconto anual)
+  amount       Decimal   @db.Decimal(10, 2)
+  // Próxima data prevista de cobrança
+  nextDueDate  DateTime?
+  // Renovação automática habilitada
+  autoRenew    Boolean   @default(true)
+  // Método de pagamento padrão associado (cartão salvo)
+  paymentMethodId String?
+  startDate    DateTime?
+  endDate      DateTime?
+  cancelledAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+
+  @@map("subscriptions")
+}
+
+// Pagamentos
+model Payment {
+  id             String    @id @default(uuid())
+  subscriptionId String
+  abacatePayId   String?   @unique @map("abacatepay_id") // ID do pagamento/PIX no AbacatePay
+  amount         Decimal   @db.Decimal(10, 2)
+  status         String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, OVERDUE, REFUNDED
+  method         String? // PIX, CREDIT_CARD
+  dueDate        DateTime
+  paymentDate    DateTime?
+  invoiceUrl     String?
+  pixQrCode      String?   @db.Text // QR Code em base64
+  pixCopyPaste   String?   @db.Text // Código copia-e-cola
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// Métodos de pagamento salvos (ex.: cartão de crédito)
+model PaymentMethod {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // CREDIT_CARD, PIX (apenas cartão será usado como padrão)
+  brand     String?  // Visa, Mastercard…
+  last4     String?  // últimos 4 dígitos
+  expMonth  Int?     // mês de expiração
+  expYear   Int?     // ano de expiração
+  abacatePayCardToken String? @map("abacatepay_card_token") // token do cartão no AbacatePay (se disponível)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@map("payment_methods")
+}
+
+// Configurações da empresa
+model CompanySettings {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  companyName  String   @map("company_name")
+  businessType String   @map("business_type") // 'manicure', 'clinic', 'dentist', 'barbershop', 'salon', 'spa', 'gym', 'restaurant', 'other'
+  description  String?  // Biografia/descrição da empresa
+  phone        String?
+  address      String?
+
+  // Logo e Banner (Cloudinary)
+  logoUrl      String?  @map("logo_url")
+  logoPublicId String?  @map("logo_public_id")
+  bannerUrl    String?  @map("banner_url")
+  bannerPublicId String? @map("banner_public_id")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services      Service[]
+  businessHours BusinessHours[]
+
+  @@map("company_settings")
+}
+
+// Serviços prestados
+model Service {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  name        String
+  description String?
+  duration    Int // duração em minutos
+  price       Decimal? @db.Decimal(10, 2)
+  imageUrl    String?  @map("image_url")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company CompanySettings @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("services")
+}
+
+// Horários de funcionamento
+model BusinessHours {
+  id         String   @id @default(uuid())
+  companyId  String   @map("company_id")
+  dayOfWeek  Int      @map("day_of_week") // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+  isOpen     Boolean  @default(true) @map("is_open")
+  openTime   String   @map("open_time") // formato "HH:mm"
+  closeTime  String   @map("close_time") // formato "HH:mm"
+  breakStart String?  @map("break_start") // formato "HH:mm"
+  breakEnd   String?  @map("break_end") // formato "HH:mm"
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  company CompanySettings @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, dayOfWeek])
+  @@map("business_hours")
+}
+
+// Sistema de Avaliações
+model Avaliacao {
+  id            String    @id @default(uuid())
+  empresaId     String    @map("empresa_id")
+  clienteId     String    @map("cliente_id")
+  servicoId     String?   @map("servico_id")
+  nota          Int       // 1 a 5 estrelas
+  comentario    String?
+  dataAvaliacao DateTime  @default(now()) @map("data_avaliacao")
+  ativo         Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente User    @relation("AvaliacoesCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  servico Servico? @relation(fields: [servicoId], references: [id], onDelete: SetNull)
+
+  // Respostas da empresa
+  respostas RespostaAvaliacao[]
+
+  // Relatórios/denúncias
+  relatorios RelatorioAvaliacao[]
+
+  @@unique([clienteId, empresaId, servicoId])
+  @@map("avaliacoes")
+}
+
+model RespostaAvaliacao {
+  id           String    @id @default(uuid())
+  avaliacaoId  String    @map("avaliacao_id")
+  empresaId    String    @map("empresa_id")
+  resposta     String
+  dataResposta DateTime  @default(now()) @map("data_resposta")
+  ativo        Boolean   @default(true)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  avaliacao Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  empresa   Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([avaliacaoId])
+  @@map("respostas_avaliacoes")
+}
+
+model RelatorioAvaliacao {
+  id           String    @id @default(uuid())
+  avaliacaoId  String    @map("avaliacao_id")
+  usuarioId    String    @map("usuario_id")
+  motivo       String
+  descricao    String?
+  status       String    @default("pendente") // pendente, analisando, resolvido, rejeitado
+  dataRelatorio DateTime @default(now()) @map("data_relatorio")
+  resolvidoEm  DateTime? @map("resolvido_em")
+  resolvidoPor String?    @map("resolvido_por")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  usuario     User      @relation("RelatoriosUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  resolvidoPorUser User? @relation("RelatoriosResolvidoPor", fields: [resolvidoPor], references: [id], onDelete: SetNull)
+
+  @@map("relatorios_avaliacoes")
+}
+
+// Sistema de Formulários Personalizados / Anamnese (comentado até migration)
+/*
+model FormularioPersonalizado {
+  id          String   @id @default(uuid())
+  empresaId   String   @map("empresa_id")
+  nome        String   // "Anamnese Estética", "Ficha Médica", "Formulário de Avaliação"
+  descricao   String?
+  campos      Json     // Array de campos do formulário: {type, label, options, required}
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  respostas RespostaFormulario[]
+
+  @@map("formularios_personalizados")
+}
+
+model RespostaFormulario {
+  id            String   @id @default(uuid())
+  formularioId  String   @map("formulario_id")
+  clienteId     String   @map("cliente_id")
+  agendamentoId String?  @map("agendamento_id")
+  respostas     Json     // Respostas do formulário: {campo_id: valor}
+  preenchidoPor String   @map("preenchido_por") // userId do profissional que preencheu
+  observacoes   String?  // Observações adicionais
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  formulario      FormularioPersonalizado @relation(fields: [formularioId], references: [id], onDelete: Cascade)
+  cliente         Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  agendamento     Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+  preenchidoPorUser User @relation("FormularioPreenchidoPor", fields: [preenchidoPor], references: [id])
+
+  @@map("respostas_formulario")
+}
+
+// Sistema de Documentos e Anexos
+model Documento {
+  id            String   @id @default(uuid())
+  empresaId     String   @map("empresa_id")
+  clienteId     String?  @map("cliente_id")
+  agendamentoId String?  @map("agendamento_id")
+  tipo          String   // "foto", "exame", "receita", "contrato", "laudo", "documento"
+  nome          String   // Nome do arquivo
+  descricao     String?
+  url           String   // URL do arquivo (Cloudinary ou storage)
+  publicId      String?  @map("public_id") // ID público do Cloudinary
+  tamanho       Int      // Tamanho em bytes
+  mimeType      String   @map("mime_type") // image/jpeg, application/pdf, etc
+  uploadedBy    String   @map("uploaded_by") // userId de quem fez upload
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relacionamentos
+  empresa        Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  agendamento    Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+  uploadedByUser User @relation("DocumentoUploadedBy", fields: [uploadedBy], references: [id])
+
+  @@map("documentos")
+}
+*/
+
+
+// Sistema de Documentos e Anexos
+model Documento {
+  id            String   @id @default(uuid())
+  empresaId     String   @map("empresa_id")
+  clienteId     String?  @map("cliente_id")
+  agendamentoId String?  @map("agendamento_id")
+  tipo          String
+  nome          String
+  descricao     String?
+  url           String
+  publicId      String?  @map("public_id")
+  tamanho       Int
+  mimeType      String   @map("mime_type")
+  uploadedBy    String   @map("uploaded_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  empresa        Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  agendamento    Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+  uploadedByUser User @relation("DocumentoUploadedBy", fields: [uploadedBy], references: [id])
+
+  @@map("documentos")
+}

@@ -1,0 +1,10 @@
+# Configuração do ngrok
+version: "2"
+authtoken_from_env: true
+tunnels:
+  web:
+    proto: http
+    addr: 3000
+    bind_tls: true
+    inspect: true
+    host_header: rewrite

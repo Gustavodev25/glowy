@@ -1,20 +1,36 @@
-@import "tailwindcss";
+/* Mapbox CSS - @import deve vir primeiro */
+@import 'mapbox-gl/dist/mapbox-gl.css';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .border-0\.5 {
+    border-width: 0.5px;
+  }
+
+  @keyframes border-flash {
+
+    0%,
+    100% {
+      border-color: #fca5a5;
+    }
+
+    50% {
+      border-color: #d1d5db;
+    }
+  }
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --background: #e6e6e6;
+  --foreground: #171717;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #e6e6e6;
     --foreground: #ededed;
   }
 }
@@ -23,4 +39,123 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Otimizações de performance */
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth fonts */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      filter: blur(4px);
+      transform: translateY(-4px);
+    }
+
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Efeito de card duplicado/layered */
+  .card-layered {
+    position: relative;
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .card-layered::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: -4px;
+    bottom: -4px;
+    background: #f3f4f6;
+    border-radius: 0.5rem;
+    z-index: -1;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* Versão alternativa com box-shadow mais sutil */
+  .card-layered-shadow {
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    box-shadow:
+      4px 4px 0 0 #f3f4f6,
+      0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  /* Versão com offset maior para efeito mais pronunciado */
+  .card-layered-bold {
+    position: relative;
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .card-layered-bold::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: -6px;
+    bottom: -6px;
+    background: #f3f4f6;
+    border-radius: 0.5rem;
+    z-index: -1;
+    border: 1px solid #d1d5db;
+  }
+
+  /* Versão com cores personalizáveis */
+  .card-layered-custom {
+    position: relative;
+    background: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .card-layered-custom::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: -4px;
+    bottom: -4px;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    z-index: -1;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* Classes para esconder scrollbars */
+  .scrollbar-hide {
+    /* Firefox */
+    scrollbar-width: none;
+    /* Safari and Chrome */
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
 }

@@ -1,0 +1,19 @@
+# Configurações do Git para garantir UTF-8
+[core]
+    autocrlf = false
+    safecrlf = true
+    quotepath = false
+    precomposeunicode = true
+
+[gui]
+    encoding = utf-8
+
+[i18n]
+    commitencoding = utf-8
+    logoutputencoding = utf-8
+
+[filter "lfs"]
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true

@@ -1,0 +1,28 @@
+{"lvl":"info","msg":"no configuration paths supplied","t":"2025-10-08T19:34:54.7024643-03:00"}
+{"lvl":"info","msg":"using configuration at default config path","path":"C:\\Users\\Gustavo Maldanis\\AppData\\Local/ngrok/ngrok.yml","t":"2025-10-08T19:34:54.729055-03:00"}
+{"err":"\u003cnil\u003e","lvl":"info","msg":"open config file","path":"C:\\Users\\Gustavo Maldanis\\AppData\\Local\\ngrok\\ngrok.yml","t":"2025-10-08T19:34:54.7448509-03:00"}
+{"addr":"127.0.0.1:4040","allow_hosts":null,"lvl":"info","msg":"starting web service","obj":"web","t":"2025-10-08T19:34:54.7686307-03:00"}
+{"lvl":"info","msg":"client session established","obj":"tunnels.session","t":"2025-10-08T19:34:54.9754326-03:00"}
+{"lvl":"info","msg":"tunnel session started","obj":"tunnels.session","t":"2025-10-08T19:34:54.9802225-03:00"}
+{"addr":"http://localhost:3000","lvl":"info","msg":"started tunnel","name":"command_line","obj":"tunnels","t":"2025-10-08T19:34:55.0352983-03:00","url":"https://be52043b1a5b.ngrok-free.app"}
+{"id":"b695bbe96e8c7bfc","lvl":"info","msg":"start","pg":"/api/tunnels","t":"2025-10-08T20:07:58.7840902-03:00"}
+{"dur":"1.1822ms","id":"b695bbe96e8c7bfc","lvl":"info","msg":"end","pg":"/api/tunnels","status":200,"t":"2025-10-08T20:07:58.7852724-03:00"}
+{"id":"88fd1d80f594","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:41108","t":"2025-10-08T20:14:37.8448763-03:00"}
+{"id":"20492c08b852","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:41532","t":"2025-10-08T20:14:40.8366411-03:00"}
+{"id":"7222593f379b","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:41540","t":"2025-10-08T20:14:42.334432-03:00"}
+{"id":"769471b41ae3","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:41546","t":"2025-10-08T20:14:43.8567081-03:00"}
+{"id":"ef19bf8c7db0","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:41552","t":"2025-10-08T20:14:45.3477443-03:00"}
+{"id":"db2887838676","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:41556","t":"2025-10-08T20:14:46.832921-03:00"}
+{"id":"23ac9bf0a73d","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:41564","t":"2025-10-08T20:14:48.3422174-03:00"}
+{"id":"8d61b316a3b0","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:57118","t":"2025-10-08T20:14:49.8699309-03:00"}
+{"id":"12ee4584b183","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:57120","t":"2025-10-08T20:14:51.3404421-03:00"}
+{"id":"9b460cdd4f7f","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:57128","t":"2025-10-08T20:14:52.8334898-03:00"}
+{"id":"04f338a52b0c","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:57144","t":"2025-10-08T20:14:57.3479337-03:00"}
+{"id":"98365c4b9501","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:57152","t":"2025-10-08T20:14:58.8964677-03:00"}
+{"id":"96c6db74176d","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:39968","t":"2025-10-08T20:15:00.3335368-03:00"}
+{"id":"4ed88493d94f","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:39978","t":"2025-10-08T20:15:01.8338189-03:00"}
+{"id":"f3773f1cb070","l":"[::1]:3000","lvl":"info","msg":"join connections","obj":"join","r":"54.232.48.115:39982","t":"2025-10-08T20:15:03.3590545-03:00"}
+{"id":"4e8ad4878f48b355","lvl":"info","msg":"start","pg":"/api/tunnels","t":"2025-10-08T20:17:20.9988648-03:00"}
+{"dur":"2.4748ms","id":"4e8ad4878f48b355","lvl":"info","msg":"end","pg":"/api/tunnels","status":200,"t":"2025-10-08T20:17:21.0013396-03:00"}
+{"id":"48f38a117789a137","lvl":"info","msg":"start","pg":"/api/tunnels","t":"2025-10-08T20:56:12.2959058-03:00"}
+{"dur":"1.0358ms","id":"48f38a117789a137","lvl":"info","msg":"end","pg":"/api/tunnels","status":200,"t":"2025-10-08T20:56:12.2969416-03:00"}

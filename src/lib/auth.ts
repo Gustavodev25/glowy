@@ -10,29 +10,61 @@ function getSecretKey() {
   return new TextEncoder().encode(SECRET);
 }
 
-// Ajustes recomendados pelo OWASP para Argon2id
-// Carrega argon2 sob demanda para evitar import no Edge.
-async function getArgon2() {
-  const mod: any = await import("argon2");
-  const argon2: any = mod.default ?? mod;
-  const ARGON2_OPTS: any = {
-    type: argon2.argon2id,
-    timeCost: 3,
-    memoryCost: 19456, // ~19 MB
-    parallelism: 1,
-  };
-  return { argon2, ARGON2_OPTS };
+// Hash de senha com fallback para bcrypt em ambientes serverless
+// Usa Argon2 em desenvolvimento e bcrypt em produção (Vercel)
+async function getHasher() {
+  const isVercel = process.env.VERCEL === '1';
+
+  if (isVercel) {
+    // Usar bcrypt no Vercel
+    const bcrypt = await import('bcryptjs');
+    return {
+      hash: async (plain: string) => bcrypt.hash(plain, 12),
+      verify: async (hash: string, plain: string) => bcrypt.compare(plain, hash)
+    };
+  } else {
+    // Usar Argon2 em desenvolvimento
+    try {
+      const mod: any = await import("argon2");
+      const argon2: any = mod.default ?? mod;
+      const ARGON2_OPTS: any = {
+        type: argon2.argon2id,
+        timeCost: 3,
+        memoryCost: 19456, // ~19 MB
+        parallelism: 1,
+      };
+      return {
+        hash: async (plain: string) => argon2.hash(plain, ARGON2_OPTS),
+        verify: async (hash: string, plain: string) => {
+          try {
+            return await argon2.verify(hash, plain, ARGON2_OPTS);
+          } catch {
+            return false;
+          }
+        }
+      };
+    } catch (error) {
+      // Fallback para bcrypt se argon2 não estiver disponível
+      const bcrypt = await import('bcryptjs');
+      return {
+        hash: async (plain: string) => bcrypt.hash(plain, 12),
+        verify: async (hash: string, plain: string) => bcrypt.compare(plain, hash)
+      };
+    }
+  }
 }
 
 export async function hashPassword(plain: string) {
-  const { argon2, ARGON2_OPTS } = await getArgon2();
-  return argon2.hash(plain, ARGON2_OPTS);
+  const hasher = await getHasher();
+  return hasher.hash(plain);
 }
+
 export async function verifyPassword(plain: string, hash: string) {
   try {
-    const { argon2, ARGON2_OPTS } = await getArgon2();
-    return await argon2.verify(hash, plain, ARGON2_OPTS);
-  } catch {
+    const hasher = await getHasher();
+    return await hasher.verify(hash, plain);
+  } catch (error) {
+    console.error('[verifyPassword] Error:', error);
     return false;
   }
 }

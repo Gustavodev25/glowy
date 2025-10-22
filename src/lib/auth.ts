@@ -1,9 +1,14 @@
 // lib/auth.ts
 import { SignJWT, jwtVerify } from "jose";
 
-const SECRET = process.env.JWT_SECRET;
-if (!SECRET) throw new Error("JWT_SECRET nǜo configurado");
-const secretKey = new TextEncoder().encode(SECRET);
+// Lazy initialization to avoid build-time errors
+function getSecretKey() {
+  const SECRET = process.env.JWT_SECRET;
+  if (!SECRET) {
+    throw new Error("JWT_SECRET não configurado");
+  }
+  return new TextEncoder().encode(SECRET);
+}
 
 // Ajustes recomendados pelo OWASP para Argon2id
 // Carrega argon2 sob demanda para evitar import no Edge.
@@ -33,6 +38,7 @@ export async function verifyPassword(plain: string, hash: string) {
 }
 
 export async function signJwt(payload: Record<string, any>, expiresIn = "7d") {
+  const secretKey = getSecretKey();
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -42,6 +48,7 @@ export async function signJwt(payload: Record<string, any>, expiresIn = "7d") {
 
 export async function verifyJwt<T = any>(token: string): Promise<T | null> {
   try {
+    const secretKey = getSecretKey();
     const { payload } = await jwtVerify(token, secretKey);
     return payload as T;
   } catch {

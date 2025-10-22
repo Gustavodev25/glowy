@@ -801,7 +801,7 @@ export default function MinhaAgendaPage() {
                 <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <CardIcon icon="clock" color="#C5837B" size="md" />
+                      <CardIcon icon="calendar" color="#C5837B" size="md" />
                       <div>
                         <div className="font-semibold text-gray-900">
                           Pendentes
@@ -992,7 +992,7 @@ export default function MinhaAgendaPage() {
                 <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <CardIcon icon="x" color="#C5837B" size="md" />
+                      <CardIcon icon="alert" color="#C5837B" size="md" />
                       <div>
                         <div className="font-semibold text-gray-900">
                           Cancelados
@@ -1629,7 +1629,7 @@ export default function MinhaAgendaPage() {
                   <div className="absolute inset-0 translate-x-1 translate-y-1 rounded-lg border border-gray-200 -z-10"></div>
                   <div className="relative bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <CardIcon icon="user" color="#C5837B" size="sm" />
+                      <CardIcon icon="phone" color="#C5837B" size="sm" />
                       <h4 className="font-semibold text-gray-900">Contato</h4>
                     </div>
                     <div className="space-y-2">
@@ -1705,7 +1705,7 @@ export default function MinhaAgendaPage() {
                   <div className="absolute inset-0 translate-x-1 translate-y-1 rounded-lg border border-gray-200 -z-10"></div>
                   <div className="relative bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <CardIcon icon="dollar" color="#C5837B" size="sm" />
+                      <CardIcon icon="gift" color="#C5837B" size="sm" />
                       <h4 className="font-semibold text-gray-900">Valor</h4>
                     </div>
                     <p className="text-2xl font-bold text-[#C5837B]">
@@ -1727,7 +1727,7 @@ export default function MinhaAgendaPage() {
                   <div className="absolute inset-0 translate-x-1 translate-y-1 rounded-lg border border-gray-200 -z-10"></div>
                   <div className="relative bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <CardIcon icon="note" color="#C5837B" size="sm" />
+                      <CardIcon icon="file-description" color="#C5837B" size="sm" />
                       <h4 className="font-semibold text-gray-900">
                         Observações
                       </h4>
@@ -1742,7 +1742,7 @@ export default function MinhaAgendaPage() {
               {/* Ações */}
               <div className="pt-2">
                 <div className="flex items-center gap-2 mb-3">
-                  <CardIcon icon="settings" color="#C5837B" size="sm" />
+                  <CardIcon icon="briefcase" color="#C5837B" size="sm" />
                   <h4 className="font-semibold text-gray-900">
                     Ações Disponíveis
                   </h4>

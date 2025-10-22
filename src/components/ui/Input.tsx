@@ -4,7 +4,7 @@ import React, { forwardRef } from 'react';
 import { clsx } from 'clsx';
 import { LucideIcon } from 'lucide-react';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   required?: boolean;
   error?: string;

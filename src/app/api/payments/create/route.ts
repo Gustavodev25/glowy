@@ -51,48 +51,48 @@ export async function POST(request: NextRequest) {
 
     console.log('📋 CPF final:', cpfCnpj);
 
-    // Criar ou buscar cliente no Asaas
-    let asaasCustomerId = (userData as any).asaasCustomerId;
+    // Criar ou buscar cliente no AbacatePay
+    let abacatePayCustomerId = (userData as any).abacatePayCustomerId;
 
-    if (!asaasCustomerId) {
-      const asaasCustomer = await asaasService.createCustomer({
+    if (!abacatePayCustomerId) {
+      const abacatePayCustomer = await asaasService.createCustomer({
         name: userData.nome,
         email: userData.email,
         cpfCnpj: cpfCnpj,
         phone: userData.telefone || undefined,
       });
-      asaasCustomerId = asaasCustomer.id;
+      abacatePayCustomerId = abacatePayCustomer.id;
 
-      // Salvar ID do cliente Asaas no banco
+      // Salvar ID do cliente AbacatePay no banco
       await prisma.user.update({
         where: { id: user.userId },
-        data: { asaasCustomerId: asaasCustomerId } as any,
+        data: { abacatePayCustomerId: abacatePayCustomerId } as any,
       });
     } else {
-      // Verificar se o cliente ainda existe no Asaas
-      console.log('🔍 Verificando cliente existente:', asaasCustomerId);
-      const existingCustomer = await asaasService.getCustomer(asaasCustomerId);
+      // Verificar se o cliente ainda existe no AbacatePay
+      console.log('🔍 Verificando cliente existente:', abacatePayCustomerId);
+      const existingCustomer = await asaasService.getCustomer(abacatePayCustomerId);
 
       if (!existingCustomer || existingCustomer.deleted) {
         // Cliente foi removido, criar um novo
         console.log('⚠️ Cliente removido ou inexistente, criando novo cliente');
-        const asaasCustomer = await asaasService.createCustomer({
+        const abacatePayCustomer = await asaasService.createCustomer({
           name: userData.nome,
           email: userData.email,
           cpfCnpj: cpfCnpj,
           phone: userData.telefone || undefined,
         });
-        asaasCustomerId = asaasCustomer.id;
+        abacatePayCustomerId = abacatePayCustomer.id;
 
         // Atualizar ID do cliente no banco
         await prisma.user.update({
           where: { id: user.userId },
-          data: { asaasCustomerId: asaasCustomerId } as any,
+          data: { abacatePayCustomerId: abacatePayCustomerId } as any,
         });
       } else if (cpfCnpj) {
         // Cliente existe, atualizar com CPF se fornecido
         console.log('🔄 Atualizando cliente existente com CPF');
-        await asaasService.updateCustomer(asaasCustomerId, {
+        await asaasService.updateCustomer(abacatePayCustomerId, {
           cpfCnpj: cpfCnpj,
         });
       }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     // Criar cobrança no Asaas
     const paymentData: any = {
-      customer: asaasCustomerId,
+      customer: abacatePayCustomerId,
       billingType: billingType,
       value: amount,
       dueDate: dueDateStr,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     const payment = await prisma.payment.create({
       data: {
         subscriptionId: subscription.id,
-        asaasId: asaasPayment.id,
+        abacatePayId: asaasPayment.id,
         amount: amount,
         status: asaasPayment.status,
         method: billingType,
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
             last4: last4,
             expMonth: expMonth as any,
             expYear: expYear as any,
-            asaasCardToken: null, // opcional: integrar tokenização ASAAS no futuro
+            abacatePayCardToken: null, // opcional: integrar tokenização ASAAS no futuro
             isDefault: true,
           },
         }),

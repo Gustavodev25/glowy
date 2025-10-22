@@ -8,7 +8,7 @@ interface User {
   id: string;
   nome: string;
   email: string;
-  tipoUsuario: "dono" | "usuario";
+  tipoUsuario?: "dono" | "usuario";
   isAdmin?: boolean;
   avatarUrl?: string;
 }
@@ -71,6 +71,8 @@ export default function TopbarManager({
 
   // Função para gerar breadcrumb baseado na rota atual
   const generateBreadcrumb = () => {
+    if (!pathname) return [];
+
     const segments = pathname.split("/").filter(Boolean);
     const breadcrumbItems = [];
 

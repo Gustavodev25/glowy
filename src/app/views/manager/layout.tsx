@@ -45,7 +45,7 @@ interface User {
   id: string;
   nome: string;
   email: string;
-  tipoUsuario: "dono" | "usuario";
+  tipoUsuario?: "dono" | "usuario";
   isAdmin?: boolean;
 }
 

@@ -30,7 +30,7 @@ interface SidebarProps {
     id: string;
     nome: string;
     email: string;
-    tipoUsuario: "dono" | "usuario";
+    tipoUsuario?: "dono" | "usuario";
     isAdmin?: boolean;
     avatarUrl?: string;
   } | null;

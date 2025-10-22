@@ -57,7 +57,7 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(
     );
     const [cepError, setCepError] = useState<string>('');
     const [isLoadingCep, setIsLoadingCep] = useState(false);
-    const cepTimeoutRef = useRef<NodeJS.Timeout>();
+    const cepTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
     // Função para buscar CEP
     const fetchCepData = async (cep: string) => {
@@ -66,11 +66,33 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(
       const cleanCep = cep.replace(/\D/g, '');
       if (cleanCep.length !== 8) return;
 
+      // Validar se é um CEP válido (não pode ser 00000000)
+      if (cleanCep === '00000000' || /^(.)\1+$/.test(cleanCep)) {
+        setCepError('CEP inválido');
+        return;
+      }
+
       setIsLoadingCep(true);
       setCepError('');
 
       try {
-        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`, {
+          signal: controller.signal,
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
 
         if (data.erro) {
@@ -91,9 +113,16 @@ const AddressInput = forwardRef<HTMLDivElement, AddressInputProps>(
         if (onChange) {
           onChange(newAddressData);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erro ao buscar CEP:', error);
-        setCepError('Erro ao buscar CEP');
+
+        if (error.name === 'AbortError') {
+          setCepError('Tempo esgotado ao buscar CEP');
+        } else if (error.message?.includes('Failed to fetch')) {
+          setCepError('Erro de conexão. Verifique sua internet.');
+        } else {
+          setCepError('Erro ao buscar CEP. Tente novamente.');
+        }
       } finally {
         setIsLoadingCep(false);
       }

@@ -748,7 +748,7 @@ export default function PerfilPage() {
             <Tabs
               tabs={tabs}
               activeTab={activeTab}
-              onTabChange={setActiveTab}
+              onTabChange={(tabId) => setActiveTab(tabId as TabType)}
               orientation="vertical"
             />
           </div>

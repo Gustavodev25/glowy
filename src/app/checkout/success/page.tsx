@@ -7,7 +7,7 @@ import BookLoader from "@/components/BookLoader";
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const paymentId = searchParams.get("paymentId");
+  const paymentId = searchParams?.get("paymentId");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

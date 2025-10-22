@@ -8,7 +8,7 @@ const cn = (...inputs: (string | undefined | null | false)[]) => {
 };
 
 export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'type'> {
-  label?: string;
+  label?: React.ReactNode;
   error?: string;
   helpText?: string;
   required?: boolean;

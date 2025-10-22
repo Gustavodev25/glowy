@@ -28,6 +28,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       className,
       containerClassName,
       disabled,
+      size,
       ...props
     },
     ref

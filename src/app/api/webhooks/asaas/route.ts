@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Buscar pagamento no banco
     const dbPayment = await prisma.payment.findUnique({
-      where: { asaasId: payment.id },
+      where: { abacatePayId: payment.id },
       include: {
         subscription: true,
       },

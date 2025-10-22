@@ -145,7 +145,6 @@ export async function POST(request: NextRequest) {
     const receitaData = await consultarReceitaFederal(documento, tipo);
 
     return NextResponse.json({
-      valid: true,
       documento: documento,
       tipo: tipo,
       ...receitaData

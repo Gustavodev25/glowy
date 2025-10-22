@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { abacatePayService } from "@/lib/abacatepay";
+import { asaasService } from "@/lib/asaas";
 import { verifyAuth } from "@/lib/auth";
 
 export async function GET(
@@ -50,14 +50,14 @@ export async function GET(
       });
     }
 
-    // Se for PIX, verificar status na API do AbacatePay
+    // Se for PIX, verificar status na API do Asaas
     if (payment.method === "PIX" && payment.abacatePayId) {
       try {
-        const pixStatus = await abacatePayService.getPixQrCodeStatus(
+        const pixStatus = await asaasService.getPayment(
           payment.abacatePayId,
         );
 
-        console.log("📊 Status do PIX no AbacatePay:", {
+        console.log("📊 Status do PIX no Asaas:", {
           id: pixStatus.id,
           status: pixStatus.status,
           fullResponse: pixStatus,

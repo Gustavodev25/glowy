@@ -140,7 +140,7 @@ export default function CompanyDetailsStepper({ onComplete }: CompanyDetailsStep
     })),
   });
 
-  const totalSteps = 6;
+  const totalSteps = 5;
 
   // Função para gerar opções de horas (07-23)
   const generateHourOptions = () => {
@@ -284,8 +284,7 @@ export default function CompanyDetailsStepper({ onComplete }: CompanyDetailsStep
           logoUrl: formData.logoUrl,
           bannerUrl: formData.bannerUrl,
 
-          // Serviços e horários
-          services: formData.services,
+          // Horários
           businessHours: formData.businessHours,
         }),
       });
@@ -471,9 +470,7 @@ export default function CompanyDetailsStepper({ onComplete }: CompanyDetailsStep
         );
       case 4: // Visual da Empresa
         return true; // Visual é opcional
-      case 5: // Serviços
-        return formData.services.some((s) => s.name.trim().length > 0);
-      case 6: // Horários
+      case 5: // Horários
         return true;
       default:
         return false;
@@ -963,124 +960,6 @@ export default function CompanyDetailsStepper({ onComplete }: CompanyDetailsStep
     },
     {
       id: "step5",
-      title: "Serviços Prestados",
-      content: (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Serviços Prestados *</h3>
-            <Button onClick={addService} variant="outline" size="sm">
-              + Adicionar Serviço
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {formData.services.map((service, index) => (
-              <div key={index} className="relative">
-                {/* Borda de trás estática */}
-                <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
-                {/* Card principal */}
-                <div className="relative z-10 bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center gap-4">
-                    {/* Upload de Imagem */}
-                    <div className="flex-shrink-0">
-                      <div className="relative">
-                        {/* Borda de trás estática */}
-                        <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
-                        {/* Card principal */}
-                        <div className="relative z-10 w-24 h-24 bg-white rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden">
-                          {uploadingImages.has(index) ? (
-                            /* Loader durante upload */
-                            <div className="flex items-center justify-center">
-                              <Loader size="md" color="primary" />
-                            </div>
-                          ) : service.imageUrl ? (
-                            /* Imagem carregada */
-                            <img
-                              src={service.imageUrl}
-                              alt={`Imagem do serviço ${index + 1}`}
-                              className="w-full h-full object-cover rounded-lg"
-                            />
-                          ) : (
-                            /* Estado inicial */
-                            <div className="text-center">
-                              <svg className="w-8 h-8 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <p className="text-xs text-gray-500">Foto</p>
-                            </div>
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            disabled={uploadingImages.has(index)}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleImageUpload(index, file);
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 space-y-4">
-                      <Input
-                        label="Nome do serviço"
-                        type="text"
-                        value={service.name}
-                        onChange={(e) => updateService(index, "name", e.target.value)}
-                        placeholder="Nome do serviço"
-                      />
-                      <Input
-                        label="Descrição do serviço"
-                        type="text"
-                        value={service.description || ""}
-                        onChange={(e) => updateService(index, "description", e.target.value)}
-                        placeholder="Descreva brevemente o serviço oferecido..."
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <Input
-                          label="Duração (min)"
-                          type="number"
-                          value={service.duration}
-                          onChange={(e) => updateService(index, "duration", parseInt((e.target as HTMLInputElement).value))}
-                          min={5}
-                          step={5}
-                        />
-                        <Input
-                          label="Preço (R$)"
-                          type="text"
-                          value={service.price}
-                          onChange={(e) => {
-                            const formatted = formatCurrency(e.target.value);
-                            updateService(index, "price", formatted);
-                          }}
-                          placeholder="0,00"
-                        />
-                      </div>
-                    </div>
-                    {formData.services.length > 1 && (
-                      <button
-                        onClick={() => removeService(index)}
-                        className="text-red-500 hover:text-red-700 mt-1 p-1 rounded hover:bg-red-50 transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-      isValid: canProceed(5),
-    },
-    {
-      id: "step6",
       title: "Horário de Funcionamento",
       content: (
         <div>
@@ -1163,7 +1042,7 @@ export default function CompanyDetailsStepper({ onComplete }: CompanyDetailsStep
           </div>
         </div>
       ),
-      isValid: canProceed(6),
+      isValid: canProceed(5),
     },
   ];
 

@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
           id: subscription.plan.id,
           name: subscription.plan.name,
           description: subscription.plan.description,
-          iconUrl: subscription.plan.iconUrl,
         },
         paymentMethod: subscription.paymentMethod ? {
           id: subscription.paymentMethod.id,

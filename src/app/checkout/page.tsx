@@ -21,13 +21,14 @@ interface UserData {
   nome: string;
   email: string;
   telefone?: string;
+  avatarUrl?: string;
 }
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const planId = searchParams.get("planId");
-  const cycleParam = searchParams.get("cycle"); // 'MONTHLY' | 'YEARLY'
+  const planId = searchParams?.get("planId");
+  const cycleParam = searchParams?.get("cycle"); // 'MONTHLY' | 'YEARLY'
   const toast = useToast();
 
   const [plan, setPlan] = useState<Plan | null>(null);

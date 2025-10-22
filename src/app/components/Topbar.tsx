@@ -167,14 +167,8 @@ function Topbar() {
               <a href="/views/catalogo" className="text-gray-700 hover:text-[#C5837B] transition-colors duration-200 font-medium">
                 Catálogo
               </a>
-              <a href="#funcionalidades" className="text-gray-700 hover:text-[#C5837B] transition-colors duration-200 font-medium">
-                Funcionalidades
-              </a>
               <a href="/views/planos" className="text-gray-700 hover:text-[#C5837B] transition-colors duration-200 font-medium">
                 Planos
-              </a>
-              <a href="#contato" className="text-gray-700 hover:text-[#C5837B] transition-colors duration-200 font-medium">
-                Contato
               </a>
             </div>
 
@@ -267,14 +261,8 @@ function Topbar() {
               <a href="/views/catalogo" className="block px-3 py-2 rounded-md text-gray-700 hover:text-[#C5837B] hover:bg-gray-50 font-medium transition-colors duration-200" onClick={() => setMenuAberto(false)}>
                 Catálogo
               </a>
-              <a href="#funcionalidades" className="block px-3 py-2 rounded-md text-gray-700 hover:text-[#C5837B] hover:bg-gray-50 font-medium transition-colors duration-200" onClick={() => setMenuAberto(false)}>
-                Funcionalidades
-              </a>
               <a href="/views/planos" className="block px-3 py-2 rounded-md text-gray-700 hover:text-[#C5837B] hover:bg-gray-50 font-medium transition-colors duration-200" onClick={() => setMenuAberto(false)}>
                 Planos
-              </a>
-              <a href="#contato" className="block px-3 py-2 rounded-md text-gray-700 hover:text-[#C5837B] hover:bg-gray-50 font-medium transition-colors duration-200" onClick={() => setMenuAberto(false)}>
-                Contato
               </a>
 
               <div className="border-t border-gray-200 pt-4 space-y-3">

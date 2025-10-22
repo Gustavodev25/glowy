@@ -359,7 +359,7 @@ export default function Sidebar({
         method: "POST",
         credentials: "include",
       });
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }

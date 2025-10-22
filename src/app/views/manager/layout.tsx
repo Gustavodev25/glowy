@@ -114,7 +114,7 @@ export default function ManagerLayout({
 
     // Se não está autenticado, redireciona para login
     if (!isAuthenticated) {
-      router.push("/login");
+      router.push("/");
       return;
     }
 

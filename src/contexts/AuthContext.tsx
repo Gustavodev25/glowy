@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       // Limpar cache ao fazer logout
       authCache = null;
-      router.push("/login");
+      router.push("/");
     }
   };
 

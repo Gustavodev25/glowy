@@ -58,11 +58,11 @@ export default function AdminLayout({
         setUser(data.user);
         setAuthorized(true);
       } else {
-        router.push("/login");
+        router.push("/");
       }
     } catch (error) {
       console.error("Erro ao verificar autenticação:", error);
-      router.push("/login");
+      router.push("/");
     } finally {
       setLoading(false);
     }

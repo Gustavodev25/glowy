@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, ReactNode, memo, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 // --- Tipos (Interfaces) ---
@@ -217,12 +218,12 @@ function Topbar() {
                 </>
               ) : (
                 <>
-                  <a href="/login" className="px-4 py-2 text-[#C5837B] font-medium hover:text-[#B0736B] transition-colors duration-200">
+                  <Link href="/" className="px-4 py-2 text-[#C5837B] font-medium hover:text-[#B0736B] transition-colors duration-200">
                     Entrar
-                  </a>
-                  <a href="/cadastro" className="px-6 py-2 bg-[#C5837B] text-white rounded-md font-medium hover:bg-[#B0736B] focus:outline-none focus:ring-2 focus:ring-[#C5837B] focus:ring-offset-2 transition duration-200">
+                  </Link>
+                  <Link href="/cadastro" className="px-6 py-2 bg-[#C5837B] text-white rounded-md font-medium hover:bg-[#B0736B] focus:outline-none focus:ring-2 focus:ring-[#C5837B] focus:ring-offset-2 transition duration-200">
                     Começar Grátis
-                  </a>
+                  </Link>
                 </>
               )}
             </div>
@@ -306,12 +307,12 @@ function Topbar() {
                   </>
                 ) : (
                   <>
-                    <a href="/login" className="block w-full px-4 py-2 text-center text-[#C5837B] font-medium border border-[#C5837B] rounded-md hover:bg-gray-50 transition-colors duration-200" onClick={() => setMenuAberto(false)}>
+                    <Link href="/" className="block w-full px-4 py-2 text-center text-[#C5837B] font-medium border border-[#C5837B] rounded-md hover:bg-gray-50 transition-colors duration-200" onClick={() => setMenuAberto(false)}>
                       Entrar
-                    </a>
-                    <a href="/cadastro" className="block w-full px-4 py-2 text-center bg-[#C5837B] text-white rounded-md font-medium hover:bg-[#B0736B] transition duration-200" onClick={() => setMenuAberto(false)}>
+                    </Link>
+                    <Link href="/cadastro" className="block w-full px-4 py-2 text-center bg-[#C5837B] text-white rounded-md font-medium hover:bg-[#B0736B] transition duration-200" onClick={() => setMenuAberto(false)}>
                       Começar Grátis
-                    </a>
+                    </Link>
                   </>
                 )}
               </div>

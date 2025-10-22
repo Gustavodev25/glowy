@@ -56,8 +56,8 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("auth")?.value;
 
   if (!token) {
-    // Redirecionar para login se não estiver autenticado
-    const url = new URL("/login", request.url);
+    // Redirecionar para página inicial (login) se não estiver autenticado
+    const url = new URL("/", request.url);
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
@@ -69,8 +69,8 @@ export async function middleware(request: NextRequest) {
     const { payload: jwtPayload } = await jwtVerify(token, secret);
     payload = jwtPayload;
   } catch (error) {
-    // Token inválido, redirecionar para login
-    const url = new URL("/login", request.url);
+    // Token inválido, redirecionar para página inicial (login)
+    const url = new URL("/", request.url);
     url.searchParams.set("redirect", pathname);
     url.searchParams.set("error", "session-expired");
 

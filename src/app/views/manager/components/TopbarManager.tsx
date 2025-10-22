@@ -35,7 +35,7 @@ export default function TopbarManager({
         method: "POST",
         credentials: "include",
       });
-      window.location.href = "/login";
+      window.location.href = "/";
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }

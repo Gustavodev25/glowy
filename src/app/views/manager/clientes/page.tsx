@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, User, Phone, Mail, Calendar } from "lucide-react";
+import { Search, Plus, Phone, Calendar } from "lucide-react";
 import Button from "@/components/visual/Button";
 import Input from "@/components/visual/Input";
-import BookLoader from "@/components/BookLoader";
 import { useToast } from "@/contexts/ToastContext";
 import NovoClienteDrawer from "./components/NovoClienteDrawer";
 import Avatar from "@/components/Avatar";
 import ClienteCardSkeleton from "./components/ClienteCardSkeleton";
+import CardIcon from "@/components/visual/CardIcon";
 
 interface Cliente {
   id: string;
@@ -23,6 +23,44 @@ interface Cliente {
     agendamentos: number;
   };
 }
+
+// Componente para o Estado Vazio (Empty State)
+const EmptyState: React.FC<{ onAddCliente: () => void; searchTerm: string }> = ({ onAddCliente, searchTerm }) => (
+  <div className="relative max-w-lg mx-auto">
+    {/* Borda de trás estática */}
+    <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
+
+    {/* Card principal */}
+    <div className="relative z-10 bg-white rounded-lg border border-gray-200 p-6 sm:p-8 text-center">
+      <div className="flex justify-center items-center mb-6">
+        <CardIcon
+          size="lg"
+          icon="heart"
+          color="#C5837B"
+        />
+      </div>
+      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+        {searchTerm ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
+      </h3>
+      <p className="text-gray-500 mb-6 text-sm sm:text-base">
+        {searchTerm
+          ? "Tente buscar por outro termo ou ajuste os filtros"
+          : "Comece adicionando seu primeiro cliente para gerenciar atendimentos e histórico"}
+      </p>
+      {!searchTerm && (
+        <Button
+          onClick={onAddCliente}
+          variant="primary"
+          size="lg"
+          className="mx-auto text-base py-3 px-6"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Adicionar Primeiro Cliente
+        </Button>
+      )}
+    </div>
+  </div>
+);
 
 export default function ClientesPage() {
   const router = useRouter();
@@ -134,36 +172,25 @@ export default function ClientesPage() {
       </div>
 
       {/* Lista de Clientes */}
-      {filteredClientes.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-          <div className="text-center py-16 px-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-[#C5837B]/20 to-[#B07268]/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <User className="w-10 h-10 text-[#C5837B]" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {searchTerm
-                ? "Nenhum cliente encontrado"
-                : "Nenhum cliente cadastrado"}
-            </h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              {searchTerm
-                ? "Tente buscar por outro termo ou ajuste os filtros"
-                : "Comece adicionando seu primeiro cliente para gerenciar atendimentos e histórico"}
-            </p>
-            {!searchTerm && (
-              <Button
-                variant="primary"
-                onClick={() => setShowNovoDrawer(true)}
-                className="shadow-lg"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Primeiro Cliente
-              </Button>
-            )}
+      <div className="relative min-h-[calc(100vh-280px)]">
+        {/* Overlay do estado vazio */}
+        {filteredClientes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
+            <EmptyState onAddCliente={() => setShowNovoDrawer(true)} searchTerm={searchTerm} />
           </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        )}
+
+        {/* Grid de clientes com efeito de blur quando vazio */}
+        <div
+          className={`transition-all duration-300 ${
+            filteredClientes.length === 0 ? 'blur-sm grayscale opacity-60 pointer-events-none' : ''
+          }`}
+          style={{
+            maskImage: filteredClientes.length === 0 ? 'linear-gradient(to bottom, black 60%, transparent 100%)' : 'none',
+            WebkitMaskImage: filteredClientes.length === 0 ? 'linear-gradient(to bottom, black 60%, transparent 100%)' : 'none',
+          }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loadingNewCliente && <ClienteCardSkeleton />}
           {filteredClientes.map((cliente) => (
             <div
@@ -254,7 +281,8 @@ export default function ClientesPage() {
             </div>
           ))}
         </div>
-      )}
+        </div>
+      </div>
       {/* Drawer de Novo Cliente */}
       <NovoClienteDrawer
         isOpen={showNovoDrawer}

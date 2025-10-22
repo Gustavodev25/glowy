@@ -407,7 +407,7 @@ export default function MeusServicosPage() {
       {/* Content */}
       <div className="px-6">
         <div className="w-full">
-          <div className="relative">
+          <div className="relative min-h-[calc(100vh-200px)]">
             {/* Overlay do estado vazio */}
             {!hasServices && (
               <div className="absolute inset-0 flex items-center justify-center z-20 p-4">

@@ -10,48 +10,14 @@ function getSecretKey() {
   return new TextEncoder().encode(SECRET);
 }
 
-// Hash de senha com fallback para bcrypt em ambientes serverless
-// Usa Argon2 em desenvolvimento e bcrypt em produção (Vercel)
+// Hash de senha usando bcryptjs em todos os ambientes
+// Isso garante compatibilidade entre desenvolvimento e produção
 async function getHasher() {
-  const isVercel = process.env.VERCEL === '1';
-
-  if (isVercel) {
-    // Usar bcrypt no Vercel
-    const bcrypt = await import('bcryptjs');
-    return {
-      hash: async (plain: string) => bcrypt.hash(plain, 12),
-      verify: async (hash: string, plain: string) => bcrypt.compare(plain, hash)
-    };
-  } else {
-    // Usar Argon2 em desenvolvimento
-    try {
-      const mod: any = await import("argon2");
-      const argon2: any = mod.default ?? mod;
-      const ARGON2_OPTS: any = {
-        type: argon2.argon2id,
-        timeCost: 3,
-        memoryCost: 19456, // ~19 MB
-        parallelism: 1,
-      };
-      return {
-        hash: async (plain: string) => argon2.hash(plain, ARGON2_OPTS),
-        verify: async (hash: string, plain: string) => {
-          try {
-            return await argon2.verify(hash, plain, ARGON2_OPTS);
-          } catch {
-            return false;
-          }
-        }
-      };
-    } catch (error) {
-      // Fallback para bcrypt se argon2 não estiver disponível
-      const bcrypt = await import('bcryptjs');
-      return {
-        hash: async (plain: string) => bcrypt.hash(plain, 12),
-        verify: async (hash: string, plain: string) => bcrypt.compare(plain, hash)
-      };
-    }
-  }
+  const bcrypt = await import('bcryptjs');
+  return {
+    hash: async (plain: string) => bcrypt.hash(plain, 12),
+    verify: async (hash: string, plain: string) => bcrypt.compare(plain, hash)
+  };
 }
 
 export async function hashPassword(plain: string) {

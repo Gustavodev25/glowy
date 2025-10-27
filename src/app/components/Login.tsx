@@ -146,6 +146,14 @@ export default function Login({ onToggleToSignup }: LoginProps) {
       );
   }, []);
 
+  // Exibir toast quando o hook de auth reportar erro
+  useEffect(() => {
+    if (authError) {
+      const msg = typeof authError === 'string' ? authError : 'Erro no login';
+      showError('Erro no login', msg);
+    }
+  }, [authError, showError]);
+
   return (
     <div className="w-full max-w-md mx-auto px-4 sm:px-0">
       <h2

@@ -647,7 +647,7 @@ export default function MinhaAgendaPage() {
             <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
             <div className="relative z-10 bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center gap-3">
-                <CardIcon icon="users" color="#C5837B" size="md" />
+                <CardIcon icon="building" color="#C5837B" size="md" />
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-900 mb-2">
                     Visualizar agenda de:

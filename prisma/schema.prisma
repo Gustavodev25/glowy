@@ -27,7 +27,7 @@ model User {
   twoFactorEnabled     Boolean   @default(false)
   twoFactorSecret      String?
   twoFactorConfirmedAt DateTime?
-  twoFactorMethod      String?   // 'totp' | 'whatsapp'
+  twoFactorMethod      String? // 'totp' | 'whatsapp'
   whatsappPhoneE164    String?
   whatsappOtpHash      String?
   whatsappOtpExpiresAt DateTime?
@@ -63,13 +63,20 @@ model User {
   companySettings   CompanySettings?
 
   // Sistema de Avaliações
-  avaliacoes        Avaliacao[] @relation("AvaliacoesCliente")
-  relatoriosEnviados RelatorioAvaliacao[] @relation("RelatoriosUsuario")
+  avaliacoes           Avaliacao[]          @relation("AvaliacoesCliente")
+  relatoriosEnviados   RelatorioAvaliacao[] @relation("RelatoriosUsuario")
   relatoriosResolvidos RelatorioAvaliacao[] @relation("RelatoriosResolvidoPor")
 
   // Novos relacionamentos
   documentosUpload Documento[] @relation("DocumentoUploadedBy")
   // respostasFormulario RespostaFormulario[] @relation("FormularioPreenchidoPor")
+
+  // Convites (workspace)
+  convitesEnviados  Convite[] @relation("UserConvitesEnviados")
+  convitesRecebidos Convite[] @relation("UserConvitesRecebidos")
+
+  // Agendamentos como profissional
+  agendamentosProfissional Agendamento[] @relation("AgendamentosProfissional")
 
   @@map("users")
 }
@@ -187,10 +194,12 @@ model Empresa {
   clientes     Cliente[]
   agendamentos Agendamento[]
   funcionarios Funcionario[]
+  // Convites vinculados à empresa
+  convites     Convite[]
 
   // Sistema de Avaliações
-  avaliacoes   Avaliacao[]
-  respostas    RespostaAvaliacao[]
+  avaliacoes Avaliacao[]
+  respostas  RespostaAvaliacao[]
 
   // Novos relacionamentos
   // formulariosPersonalizados FormularioPersonalizado[]
@@ -212,9 +221,10 @@ model Servico {
   updatedAt DateTime @updatedAt
 
   // Relacionamentos
-  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  agendamentos Agendamento[]
-  avaliacoes   Avaliacao[]
+  empresa       Empresa              @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  agendamentos  Agendamento[]
+  avaliacoes    Avaliacao[]
+  funcionarios  FuncionarioServico[]
 
   @@map("servicos")
 }
@@ -251,30 +261,70 @@ model Funcionario {
   updatedAt DateTime @updatedAt
 
   // Relacionamentos
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  empresa  Empresa              @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicos FuncionarioServico[]
 
   @@map("funcionarios")
 }
 
+// Relacionamento many-to-many entre Funcionario e Servico
+model FuncionarioServico {
+  id            String   @id @default(uuid())
+  funcionarioId String   @map("funcionario_id")
+  servicoId     String   @map("servico_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  funcionario Funcionario @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  servico     Servico     @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+
+  @@unique([funcionarioId, servicoId])
+  @@map("funcionario_servico")
+}
+
+// Convites para profissionais entrarem na empresa (workspace)
+model Convite {
+  id             String    @id @default(uuid())
+  token          String    @unique
+  email          String
+  mensagem       String?
+  status         String    @default("PENDING") // PENDING, ACCEPTED, EXPIRED, REVOKED
+  empresaId      String
+  convidadoPorId String
+  convidadoId    String?
+  servicosIds    String[]  @default([]) @map("servicos_ids") // IDs dos serviços vinculados
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  empresa      Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  convidadoPor User    @relation("UserConvitesEnviados", fields: [convidadoPorId], references: [id], onDelete: Cascade)
+  convidado    User?   @relation("UserConvitesRecebidos", fields: [convidadoId], references: [id])
+
+  @@map("convites")
+}
+
 model Agendamento {
-  id              String   @id @default(uuid())
-  empresaId       String
-  servicoId       String
-  clienteId       String
-  dataHora        DateTime
-  duracao         Int // em minutos
-  valor           Decimal  @db.Decimal(10, 2)
-  status          String   @default("agendado") // "agendado", "confirmado", "cancelado", "concluido"
-  observacoes     String?
-  formaPagamento  String?  // "dinheiro", "pix", "debito", "credito"
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(uuid())
+  empresaId      String
+  servicoId      String
+  clienteId      String
+  profissionalId String? // ID do profissional responsável pelo agendamento
+  dataHora       DateTime
+  duracao        Int // em minutos
+  valor          Decimal  @db.Decimal(10, 2)
+  status         String   @default("agendado") // "agendado", "confirmado", "cancelado", "concluido"
+  observacoes    String?
+  formaPagamento String? // "dinheiro", "pix", "debito", "credito"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relacionamentos
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  servico Servico @relation(fields: [servicoId], references: [id], onDelete: Restrict)
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  empresa       Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  servico       Servico @relation(fields: [servicoId], references: [id], onDelete: Restrict)
+  cliente       Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  profissional  User?   @relation("AgendamentosProfissional", fields: [profissionalId], references: [id], onDelete: SetNull)
 
   // Novos relacionamentos
   documentos Documento[]
@@ -285,14 +335,14 @@ model Agendamento {
 
 // Planos de assinatura
 model Plan {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String // "Básico", "Profissional", "Empresarial"
   description String?
-  price       Decimal  @db.Decimal(10, 2)
-  interval    String   @default("MONTHLY") // MONTHLY, YEARLY
+  price       Decimal @db.Decimal(10, 2)
+  interval    String  @default("MONTHLY") // MONTHLY, YEARLY
 
   // Funcionalidades do plano
-  features    String[] // Array de recursos em texto
+  features String[] // Array de recursos em texto
 
   // Limites e permissões
   maxProfissionais      Int     @default(1) // Quantos profissionais podem agendar
@@ -320,30 +370,30 @@ model Plan {
 
 // Assinaturas dos usuários
 model Subscription {
-  id           String    @id @default(uuid())
-  userId       String
-  planId       String
-  abacatePayId String?   @unique @map("abacatepay_id") // ID da assinatura/billing no AbacatePay
-  status       String    @default("pending") // pending, active, cancelled, suspended
-  paymentType  String?  // PIX, CREDIT_CARD
+  id              String    @id @default(uuid())
+  userId          String
+  planId          String
+  abacatePayId    String?   @unique @map("abacatepay_id") // ID da assinatura/billing no AbacatePay
+  status          String    @default("pending") // pending, active, cancelled, suspended
+  paymentType     String? // PIX, CREDIT_CARD
   // Ciclo da assinatura selecionado no checkout
-  cycle        String    @default("MONTHLY") // MONTHLY, YEARLY
+  cycle           String    @default("MONTHLY") // MONTHLY, YEARLY
   // Valor contratado no momento da assinatura (pode refletir desconto anual)
-  amount       Decimal   @db.Decimal(10, 2)
+  amount          Decimal   @db.Decimal(10, 2)
   // Próxima data prevista de cobrança
-  nextDueDate  DateTime?
+  nextDueDate     DateTime?
   // Renovação automática habilitada
-  autoRenew    Boolean   @default(true)
+  autoRenew       Boolean   @default(true)
   // Método de pagamento padrão associado (cartão salvo)
   paymentMethodId String?
-  startDate    DateTime?
-  endDate      DateTime?
-  cancelledAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  startDate       DateTime?
+  endDate         DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  plan     Plan      @relation(fields: [planId], references: [id])
-  payments Payment[]
+  plan          Plan           @relation(fields: [planId], references: [id])
+  payments      Payment[]
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
 
   @@map("subscriptions")
@@ -372,17 +422,17 @@ model Payment {
 
 // Métodos de pagamento salvos (ex.: cartão de crédito)
 model PaymentMethod {
-  id        String   @id @default(uuid())
-  userId    String
-  type      String   // CREDIT_CARD, PIX (apenas cartão será usado como padrão)
-  brand     String?  // Visa, Mastercard…
-  last4     String?  // últimos 4 dígitos
-  expMonth  Int?     // mês de expiração
-  expYear   Int?     // ano de expiração
-  abacatePayCardToken String? @map("abacatepay_card_token") // token do cartão no AbacatePay (se disponível)
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  userId              String
+  type                String // CREDIT_CARD, PIX (apenas cartão será usado como padrão)
+  brand               String? // Visa, Mastercard…
+  last4               String? // últimos 4 dígitos
+  expMonth            Int? // mês de expiração
+  expYear             Int? // ano de expiração
+  abacatePayCardToken String?  @map("abacatepay_card_token") // token do cartão no AbacatePay (se disponível)
+  isDefault           Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscriptions Subscription[]
@@ -392,22 +442,22 @@ model PaymentMethod {
 
 // Configurações da empresa
 model CompanySettings {
-  id           String   @id @default(uuid())
-  userId       String   @unique @map("user_id")
-  companyName  String   @map("company_name")
-  businessType String   @map("business_type") // 'manicure', 'clinic', 'dentist', 'barbershop', 'salon', 'spa', 'gym', 'restaurant', 'other'
-  description  String?  // Biografia/descrição da empresa
+  id           String  @id @default(uuid())
+  userId       String  @unique @map("user_id")
+  companyName  String  @map("company_name")
+  businessType String  @map("business_type") // 'manicure', 'clinic', 'dentist', 'barbershop', 'salon', 'spa', 'gym', 'restaurant', 'other'
+  description  String? // Biografia/descrição da empresa
   phone        String?
   address      String?
 
   // Logo e Banner (Cloudinary)
-  logoUrl      String?  @map("logo_url")
-  logoPublicId String?  @map("logo_public_id")
-  bannerUrl    String?  @map("banner_url")
+  logoUrl        String? @map("logo_url")
+  logoPublicId   String? @map("logo_public_id")
+  bannerUrl      String? @map("banner_url")
   bannerPublicId String? @map("banner_public_id")
 
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   services      Service[]
@@ -455,20 +505,20 @@ model BusinessHours {
 
 // Sistema de Avaliações
 model Avaliacao {
-  id            String    @id @default(uuid())
-  empresaId     String    @map("empresa_id")
-  clienteId     String    @map("cliente_id")
-  servicoId     String?   @map("servico_id")
-  nota          Int       // 1 a 5 estrelas
+  id            String   @id @default(uuid())
+  empresaId     String   @map("empresa_id")
+  clienteId     String   @map("cliente_id")
+  servicoId     String?  @map("servico_id")
+  nota          Int // 1 a 5 estrelas
   comentario    String?
-  dataAvaliacao DateTime  @default(now()) @map("data_avaliacao")
-  ativo         Boolean   @default(true)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  dataAvaliacao DateTime @default(now()) @map("data_avaliacao")
+  ativo         Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relacionamentos
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  cliente User    @relation("AvaliacoesCliente", fields: [clienteId], references: [id], onDelete: Cascade)
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente User     @relation("AvaliacoesCliente", fields: [clienteId], references: [id], onDelete: Cascade)
   servico Servico? @relation(fields: [servicoId], references: [id], onDelete: SetNull)
 
   // Respostas da empresa
@@ -482,14 +532,14 @@ model Avaliacao {
 }
 
 model RespostaAvaliacao {
-  id           String    @id @default(uuid())
-  avaliacaoId  String    @map("avaliacao_id")
-  empresaId    String    @map("empresa_id")
+  id           String   @id @default(uuid())
+  avaliacaoId  String   @map("avaliacao_id")
+  empresaId    String   @map("empresa_id")
   resposta     String
-  dataResposta DateTime  @default(now()) @map("data_resposta")
-  ativo        Boolean   @default(true)
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  dataResposta DateTime @default(now()) @map("data_resposta")
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relacionamentos
   avaliacao Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
@@ -500,91 +550,82 @@ model RespostaAvaliacao {
 }
 
 model RelatorioAvaliacao {
-  id           String    @id @default(uuid())
-  avaliacaoId  String    @map("avaliacao_id")
-  usuarioId    String    @map("usuario_id")
-  motivo       String
-  descricao    String?
-  status       String    @default("pendente") // pendente, analisando, resolvido, rejeitado
-  dataRelatorio DateTime @default(now()) @map("data_relatorio")
-  resolvidoEm  DateTime? @map("resolvido_em")
-  resolvidoPor String?    @map("resolvido_por")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  avaliacaoId   String    @map("avaliacao_id")
+  usuarioId     String    @map("usuario_id")
+  motivo        String
+  descricao     String?
+  status        String    @default("pendente") // pendente, analisando, resolvido, rejeitado
+  dataRelatorio DateTime  @default(now()) @map("data_relatorio")
+  resolvidoEm   DateTime? @map("resolvido_em")
+  resolvidoPor  String?   @map("resolvido_por")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // Relacionamentos
-  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
-  usuario     User      @relation("RelatoriosUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
-  resolvidoPorUser User? @relation("RelatoriosResolvidoPor", fields: [resolvidoPor], references: [id], onDelete: SetNull)
+  avaliacao        Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  usuario          User      @relation("RelatoriosUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  resolvidoPorUser User?     @relation("RelatoriosResolvidoPor", fields: [resolvidoPor], references: [id], onDelete: SetNull)
 
   @@map("relatorios_avaliacoes")
 }
 
 // Sistema de Formulários Personalizados / Anamnese (comentado até migration)
-/*
-model FormularioPersonalizado {
-  id          String   @id @default(uuid())
-  empresaId   String   @map("empresa_id")
-  nome        String   // "Anamnese Estética", "Ficha Médica", "Formulário de Avaliação"
-  descricao   String?
-  campos      Json     // Array de campos do formulário: {type, label, options, required}
-  ativo       Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relacionamentos
-  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  respostas RespostaFormulario[]
-
-  @@map("formularios_personalizados")
-}
-
-model RespostaFormulario {
-  id            String   @id @default(uuid())
-  formularioId  String   @map("formulario_id")
-  clienteId     String   @map("cliente_id")
-  agendamentoId String?  @map("agendamento_id")
-  respostas     Json     // Respostas do formulário: {campo_id: valor}
-  preenchidoPor String   @map("preenchido_por") // userId do profissional que preencheu
-  observacoes   String?  // Observações adicionais
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // Relacionamentos
-  formulario      FormularioPersonalizado @relation(fields: [formularioId], references: [id], onDelete: Cascade)
-  cliente         Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  agendamento     Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
-  preenchidoPorUser User @relation("FormularioPreenchidoPor", fields: [preenchidoPor], references: [id])
-
-  @@map("respostas_formulario")
-}
-
-// Sistema de Documentos e Anexos
-model Documento {
-  id            String   @id @default(uuid())
-  empresaId     String   @map("empresa_id")
-  clienteId     String?  @map("cliente_id")
-  agendamentoId String?  @map("agendamento_id")
-  tipo          String   // "foto", "exame", "receita", "contrato", "laudo", "documento"
-  nome          String   // Nome do arquivo
-  descricao     String?
-  url           String   // URL do arquivo (Cloudinary ou storage)
-  publicId      String?  @map("public_id") // ID público do Cloudinary
-  tamanho       Int      // Tamanho em bytes
-  mimeType      String   @map("mime_type") // image/jpeg, application/pdf, etc
-  uploadedBy    String   @map("uploaded_by") // userId de quem fez upload
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  // Relacionamentos
-  empresa        Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  agendamento    Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
-  uploadedByUser User @relation("DocumentoUploadedBy", fields: [uploadedBy], references: [id])
-
-  @@map("documentos")
-}
-*/
-
+/**
+ * model FormularioPersonalizado {
+ * id          String   @id @default(uuid())
+ * empresaId   String   @map("empresa_id")
+ * nome        String   // "Anamnese Estética", "Ficha Médica", "Formulário de Avaliação"
+ * descricao   String?
+ * campos      Json     // Array de campos do formulário: {type, label, options, required}
+ * ativo       Boolean  @default(true)
+ * createdAt   DateTime @default(now()) @map("created_at")
+ * updatedAt   DateTime @updatedAt @map("updated_at")
+ * // Relacionamentos
+ * empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+ * respostas RespostaFormulario[]
+ * @@map("formularios_personalizados")
+ * }
+ * model RespostaFormulario {
+ * id            String   @id @default(uuid())
+ * formularioId  String   @map("formulario_id")
+ * clienteId     String   @map("cliente_id")
+ * agendamentoId String?  @map("agendamento_id")
+ * respostas     Json     // Respostas do formulário: {campo_id: valor}
+ * preenchidoPor String   @map("preenchido_por") // userId do profissional que preencheu
+ * observacoes   String?  // Observações adicionais
+ * createdAt     DateTime @default(now()) @map("created_at")
+ * updatedAt     DateTime @updatedAt @map("updated_at")
+ * // Relacionamentos
+ * formulario      FormularioPersonalizado @relation(fields: [formularioId], references: [id], onDelete: Cascade)
+ * cliente         Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+ * agendamento     Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+ * preenchidoPorUser User @relation("FormularioPreenchidoPor", fields: [preenchidoPor], references: [id])
+ * @@map("respostas_formulario")
+ * }
+ * // Sistema de Documentos e Anexos
+ * model Documento {
+ * id            String   @id @default(uuid())
+ * empresaId     String   @map("empresa_id")
+ * clienteId     String?  @map("cliente_id")
+ * agendamentoId String?  @map("agendamento_id")
+ * tipo          String   // "foto", "exame", "receita", "contrato", "laudo", "documento"
+ * nome          String   // Nome do arquivo
+ * descricao     String?
+ * url           String   // URL do arquivo (Cloudinary ou storage)
+ * publicId      String?  @map("public_id") // ID público do Cloudinary
+ * tamanho       Int      // Tamanho em bytes
+ * mimeType      String   @map("mime_type") // image/jpeg, application/pdf, etc
+ * uploadedBy    String   @map("uploaded_by") // userId de quem fez upload
+ * createdAt     DateTime @default(now()) @map("created_at")
+ * // Relacionamentos
+ * empresa        Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+ * cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+ * agendamento    Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+ * uploadedByUser User @relation("DocumentoUploadedBy", fields: [uploadedBy], references: [id])
+ * @@map("documentos")
+ * }
+ */
 
 // Sistema de Documentos e Anexos
 model Documento {
@@ -602,10 +643,10 @@ model Documento {
   uploadedBy    String   @map("uploaded_by")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  empresa        Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  empresa        Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente        Cliente?     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   agendamento    Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
-  uploadedByUser User @relation("DocumentoUploadedBy", fields: [uploadedBy], references: [id])
+  uploadedByUser User         @relation("DocumentoUploadedBy", fields: [uploadedBy], references: [id])
 
   @@map("documentos")
 }

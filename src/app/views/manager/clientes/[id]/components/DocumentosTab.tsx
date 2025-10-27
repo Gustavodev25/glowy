@@ -192,29 +192,32 @@ export default function DocumentosTab({
 
                     {/* Ações */}
                     <div className="flex items-center gap-2">
-                      <Tooltip content="Visualizar" position="top">
+                      <Tooltip content="Visualizar" position="bottom">
                         <button
                           onClick={() => setViewDocument(doc)}
                           className="p-2 text-gray-600 hover:text-[#C5837B] hover:bg-gray-100 rounded-lg transition-colors"
+                          aria-label="Visualizar documento"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                       </Tooltip>
 
-                      <Tooltip content="Baixar" position="top">
+                      <Tooltip content="Baixar" position="bottom">
                         <a
                           href={doc.url}
                           download
                           className="inline-flex p-2 text-gray-600 hover:text-[#C5837B] hover:bg-gray-100 rounded-lg transition-colors"
+                          aria-label="Baixar documento"
                         >
                           <Download className="w-4 h-4" />
                         </a>
                       </Tooltip>
 
-                      <Tooltip content="Excluir" position="top">
+                      <Tooltip content="Excluir" position="bottom">
                         <button
                           onClick={() => openDeleteModal(doc)}
                           className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          aria-label="Excluir documento"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

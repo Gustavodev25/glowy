@@ -131,6 +131,109 @@ export async function requireUsuario(
 }
 
 /**
+ * Middleware para verificar se o usuário é dono OU profissional da empresa
+ * Retorna a empresa do usuário (seja ele dono ou profissional)
+ */
+export async function requireDonoOrProfissional(
+  request: NextRequest
+): Promise<{
+  authorized: boolean;
+  user: any;
+  empresa: any | null;
+  response?: NextResponse
+}> {
+  const auth = await authMiddleware(request);
+
+  if (!auth.authenticated) {
+    return {
+      authorized: false,
+      user: null,
+      empresa: null,
+      response: auth.response,
+    };
+  }
+
+  // Verifica se é dono ou profissional
+  if (auth.user.tipoUsuario !== "dono" && auth.user.tipoUsuario !== "usuario") {
+    return {
+      authorized: false,
+      user: auth.user,
+      empresa: null,
+      response: NextResponse.json(
+        { error: "Acesso negado. Apenas donos ou profissionais podem acessar este recurso." },
+        { status: 403 }
+      ),
+    };
+  }
+
+  try {
+    let empresa = null;
+
+    if (auth.user.tipoUsuario === "dono") {
+      // Se é dono, busca a empresa onde ele é o dono
+      empresa = await prisma.empresa.findFirst({
+        where: { donoId: auth.user.id },
+        select: {
+          id: true,
+          nomeEmpresa: true,
+          donoId: true,
+          logoUrl: true,
+          telefone: true,
+          email: true,
+        },
+      });
+    } else if (auth.user.tipoUsuario === "usuario") {
+      // Se é profissional, busca a empresa através da tabela funcionario
+      const funcionario = await prisma.funcionario.findFirst({
+        where: { userId: auth.user.id },
+        include: {
+          empresa: {
+            select: {
+              id: true,
+              nomeEmpresa: true,
+              donoId: true,
+              logoUrl: true,
+              telefone: true,
+              email: true,
+            },
+          },
+        },
+      });
+      empresa = funcionario?.empresa || null;
+    }
+
+    if (!empresa) {
+      return {
+        authorized: false,
+        user: auth.user,
+        empresa: null,
+        response: NextResponse.json(
+          { error: "Empresa não encontrada para este usuário." },
+          { status: 404 }
+        ),
+      };
+    }
+
+    return {
+      authorized: true,
+      user: auth.user,
+      empresa,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar empresa:", error);
+    return {
+      authorized: false,
+      user: auth.user,
+      empresa: null,
+      response: NextResponse.json(
+        { error: "Erro ao buscar dados da empresa." },
+        { status: 500 }
+      ),
+    };
+  }
+}
+
+/**
  * Helper para extrair informações do usuário autenticado de uma requisição
  */
 export async function getUserFromRequest(request: NextRequest) {

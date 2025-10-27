@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import QRCode from "qrcode";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
+import Avatar from "@/components/Avatar";
 
 interface SubMenuItem {
   label: string;
@@ -70,8 +72,34 @@ export default function Sidebar({
     };
     status?: string;
     nextDueDate?: Date | string | null;
+    isInherited?: boolean;
+    ownerName?: string | null;
+    ownerPlanName?: string | null;
   } | null>(null);
   const [loadingSub, setLoadingSub] = useState<boolean>(false);
+
+  // Empresa e convites para dropdown de equipe no header
+  const [empresa, setEmpresa] = useState<{
+    id: string;
+    nomeEmpresa: string;
+    cidade?: string | null;
+    estado?: string | null;
+  } | null>(null);
+  const [convitesPendentes, setConvitesPendentes] = useState<Array<{
+    id: string;
+    email: string;
+    nome?: string | null;
+    status?: string;
+    createdAt?: string;
+  }>>([]);
+  const [membrosAtivos, setMembrosAtivos] = useState<Array<{
+    id: string;
+    nome?: string | null;
+    email: string;
+    avatarUrl?: string | null;
+  }>>([]);
+  const [loadingEquipeInfo, setLoadingEquipeInfo] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   const isActive = (href: string) => {
     return pathname === href;
@@ -149,6 +177,9 @@ export default function Sidebar({
                 plan: data.subscription.plan,
                 status: data.subscription.status,
                 nextDueDate: data.subscription.nextDueDate,
+                isInherited: data.subscription.isInherited,
+                ownerName: data.subscription.ownerName,
+                ownerPlanName: data.subscription.ownerPlanName,
               });
             } else {
               setSubscription(null);
@@ -165,6 +196,63 @@ export default function Sidebar({
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Buscar dados da empresa e convites (dropdown de equipe no header)
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      try {
+        setLoadingEquipeInfo(true);
+        const resEmp = await fetch("/api/empresa", { credentials: "include" });
+        if (resEmp.ok) {
+          const data = await resEmp.json();
+          if (data?.empresa) {
+            setEmpresa({
+              id: data.empresa.id,
+              nomeEmpresa: data.empresa.nomeEmpresa,
+              cidade: data.empresa.cidade,
+              estado: data.empresa.estado,
+            });
+          }
+        }
+        const resEq = await fetch("/api/empresa/equipe", { credentials: "include" });
+        if (resEq.ok) {
+          const data = await resEq.json();
+          const convites = (data?.equipe || []).filter((i: any) => i?.tipo === 'convite');
+          setConvitesPendentes(convites.map((c: any) => ({ id: c.id, email: c.email, nome: c.nome, status: c.status, createdAt: c.createdAt })));
+          const membros = (data?.equipe || []).filter((i: any) => i?.tipo === 'membro');
+          setMembrosAtivos(membros.map((m: any) => ({ id: m.id, nome: m.nome, email: m.email, avatarUrl: m.avatarUrl })));
+        }
+      } catch (e) {
+        console.error('Erro ao buscar dados de empresa/equipe:', e);
+      } finally {
+        setLoadingEquipeInfo(false);
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Gera QR estático e aplica blur no componente
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await QRCode.toDataURL("https://glowy.app/mobile-coming-soon", {
+          width: 192,
+          margin: 0,
+          color: { dark: "#111827", light: "#ffffff" },
+          errorCorrectionLevel: "M",
+        });
+        if (mounted) setQrDataUrl(data);
+      } catch {
+        // ignora
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // (sem QRCode dinâmico — pedido para abrir o mesmo card do perfil)
 
   // Menus do painel normal (dono)
   const normalMenuItems: MenuItem[] = [
@@ -261,17 +349,7 @@ export default function Sidebar({
           />
         </svg>
       ),
-      hasDropdown: true,
-      subItems: [
-        {
-          label: "Workspace Geral",
-          href: "/views/manager/profissionais/workspace",
-        },
-        {
-          label: "Gerenciar Equipe",
-          href: "/views/manager/profissionais/equipe",
-        },
-      ],
+      href: "/views/manager/profissionais/equipe",
     },
   ];
 
@@ -323,36 +401,6 @@ export default function Sidebar({
     if (mobileOpen && onCloseMobile) onCloseMobile();
   };
 
-  const getInitials = (nome: string) => {
-    const names = nome.split(" ");
-    if (names.length >= 2) {
-      return `${names[0][0]}${names[1][0]}`.toUpperCase();
-    }
-    return nome.substring(0, 2).toUpperCase();
-  };
-
-  const renderAvatar = (
-    u: NonNullable<SidebarProps["user"]>,
-    className: string = "w-10 h-10",
-  ) => {
-    if (u?.avatarUrl) {
-      return (
-        <img
-          src={u.avatarUrl}
-          alt={`Avatar de ${u.nome}`}
-          className={`${className} rounded-full object-cover`}
-        />
-      );
-    }
-    return (
-      <div
-        className={`${className} rounded-full bg-[#C5837B] text-white font-semibold flex items-center justify-center`}
-      >
-        {u ? getInitials(u.nome) : ""}
-      </div>
-    );
-  };
-
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", {
@@ -388,18 +436,113 @@ export default function Sidebar({
           (isCollapsed ? ` md:w-20` : ` md:w-64`)
         }
       >
-        {/* Logo */}
-        <div className="p-6 flex items-center justify-start pl-5">
-          <div
-            className={`transition-all duration-300 ${isCollapsed ? "scale-90" : "scale-100"}`}
-          >
-            <img
-              src="/assets/logo.png"
-              alt="Booky Logo"
-              className={`rounded-lg object-cover transition-all duration-300 ${
-                isCollapsed ? "w-10 h-10" : "w-12 h-12"
-              }`}
-            />
+        {/* Logo + Dropdown Equipe */}
+        <div className="p-6 pl-5">
+          <div className={`flex items-center ${isCollapsed ? 'justify-start' : 'gap-3'}`}>
+            <div className={`transition-all duration-300 ${isCollapsed ? "scale-90" : "scale-100"} ${isCollapsed ? '' : 'flex-shrink-0'}`}>
+              <img src="/assets/logo.png" alt="Booky Logo" className={`rounded-lg object-cover transition-all duration-300 ${isCollapsed ? "w-10 h-10" : "w-12 h-12"}`} />
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 relative">
+                <div className="absolute inset-1 translate-x-1 translate-y-1 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
+                <Dropdown
+                  trigger={
+                    <button type="button" className="relative z-10 w-full flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+                      <div className="flex-1 min-w-0 flex flex-col items-start">
+                        <span className="text-sm font-semibold text-gray-900 truncate w-full text-left" title={empresa?.nomeEmpresa || 'Minha Empresa'}>{empresa?.nomeEmpresa || 'Minha Empresa'}</span>
+                        <span className="text-[11px] text-gray-500 truncate w-full text-left" title={`${empresa?.cidade || ''}${empresa?.estado ? ' - ' + empresa?.estado : ''}`}>{(empresa?.cidade || '') + (empresa?.estado ? ' - ' + empresa?.estado : '')}</span>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+                    </button>
+                  }
+                  align="left"
+                >
+                <div className="p-3 w-full">
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-500">Empresa</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{empresa?.nomeEmpresa || 'Minha Empresa'}</p>
+                    <p className="text-xs text-gray-500 truncate">{(empresa?.cidade || '') + (empresa?.estado ? ' - ' + empresa?.estado : '')}</p>
+                  </div>
+
+                  {/* Mostrar lista de profissionais apenas para donos */}
+                  {user?.tipoUsuario === 'dono' && (
+                    <>
+                      <div className="border-t border-gray-200 my-2" />
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-700">Profissionais ativos</span>
+                        </div>
+                        {membrosAtivos.length === 0 ? (
+                          <p className="text-xs text-gray-500">Nenhum profissional ativo ainda.</p>
+                        ) : (
+                          <ul className="max-h-56 overflow-y-auto divide-y divide-gray-100">
+                            {membrosAtivos.map((m) => (
+                              <li key={m.id} className="py-2">
+                                <div className="flex items-center gap-2">
+                                  <Avatar name={m.nome || m.email} id={m.id} imageUrl={m.avatarUrl || undefined} size="sm" />
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium text-gray-900 truncate">{m.nome || m.email}</p>
+                                    <p className="text-[11px] text-gray-500 truncate">{m.email}</p>
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-700">Profissionais convidados</span>
+                          {loadingEquipeInfo && <span className="text-[11px] text-gray-400">carregando...</span>}
+                        </div>
+                        {convitesPendentes.length === 0 ? (
+                          <p className="text-xs text-gray-500">Nenhum convite pendente.</p>
+                        ) : (
+                          <ul className="max-h-56 overflow-y-auto divide-y divide-gray-100">
+                            {convitesPendentes.map((c) => (
+                              <li key={c.id} className="py-2">
+                                <div className="flex items-start gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-[11px] font-bold">{(c.nome || c.email || '?').slice(0,1).toUpperCase()}</div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-medium text-gray-900 truncate">{c.nome || c.email}</p>
+                                    <p className="text-[11px] text-gray-500 truncate">{c.email}</p>
+                                  </div>
+                                  <span className="px-1.5 py-0.5 text-[10px] rounded-full border border-yellow-200 bg-yellow-50 text-yellow-700">{c.status === 'EXPIRED' ? 'Expirado' : 'Pendente'}</span>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Mensagem para contas convidadas */}
+                  {user?.tipoUsuario !== 'dono' && (
+                    <>
+                      <div className="border-t border-gray-200 my-2" />
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Você faz parte desta empresa como profissional convidado.
+                        </p>
+                        {empresa?.cidade && empresa?.estado && (
+                          <div className="flex items-start gap-2 pt-1">
+                            <svg className="w-3.5 h-3.5 text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-700">{empresa.cidade} - {empresa.estado}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Dropdown>
+              </div>
+            )}
           </div>
         </div>
         {/* Menu Items */}
@@ -430,18 +573,21 @@ export default function Sidebar({
                         </span>
                         <span
                           className={`text-sm font-medium transition-all duration-300 ${
-                            isCollapsed
-                              ? "opacity-0 w-0 overflow-hidden blur-sm"
-                              : "opacity-100 blur-0"
+                            isCollapsed ? "hidden" : "opacity-100 blur-0"
                           } ${
                             item.label === "Gerenciamento de Profissionais"
                               ? "leading-tight"
                               : "whitespace-nowrap"
                           }`}
-                          style={{
-                            filter: isCollapsed ? "blur(4px)" : "blur(0px)",
-                            transition: "all 0.3s ease-in-out",
-                          }}
+                          aria-hidden={isCollapsed}
+                          style={
+                            !isCollapsed
+                              ? {
+                                  filter: "blur(0px)",
+                                  transition: "all 0.3s ease-in-out",
+                                }
+                              : undefined
+                          }
                         >
                           {item.label === "Gerenciamento de Profissionais" ? (
                             <>
@@ -542,18 +688,21 @@ export default function Sidebar({
                       </span>
                       <span
                         className={`text-sm font-medium transition-all duration-300 ${
-                          isCollapsed
-                            ? "opacity-0 w-0 overflow-hidden blur-sm"
-                            : "opacity-100 blur-0"
+                          isCollapsed ? "hidden" : "opacity-100 blur-0"
                         } ${
                           item.label === "Gerenciamento de Profissionais"
                             ? "leading-tight"
                             : "whitespace-nowrap"
                         }`}
-                        style={{
-                          filter: isCollapsed ? "blur(4px)" : "blur(0px)",
-                          transition: "all 0.3s ease-in-out",
-                        }}
+                        aria-hidden={isCollapsed}
+                        style={
+                          !isCollapsed
+                            ? {
+                                filter: "blur(0px)",
+                                transition: "all 0.3s ease-in-out",
+                              }
+                            : undefined
+                        }
                       >
                         {item.label === "Gerenciamento de Profissionais" ? (
                           <>
@@ -580,6 +729,60 @@ export default function Sidebar({
 
         {/* Footer User Section */}
         <div className="p-4 border-t border-gray-200">
+          {/* Ação: Baixar app mobile (mostra card com QR e aviso "Em breve") */}
+          {!isCollapsed && (
+            <Dropdown
+              align="right"
+              placement="right"
+              trigger={
+                <button
+                  type="button"
+                  className="group w-full mb-3 flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg className="w-4 h-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 16l4-5h-3V4h-2v7H8l4 5z" />
+                      <path d="M20 18v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900 truncate">Baixar app mobile</span>
+                  </div>
+                  {/* Seta animada (esquerda -> direita) */}
+                  <svg className="w-4 h-4 text-gray-600 transition-transform duration-200 ease-out group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </button>
+              }
+            >
+              {/* Card do aplicativo em desenvolvimento */}
+              <div className="p-4 min-w-[280px] max-w-sm">
+                <div className="flex items-start gap-3 mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-800 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M6 5a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-14z" />
+                    <path d="M11 4h2" />
+                    <path d="M12 17v.01" />
+                  </svg>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Aplicativo mobile</h3>
+                    <p className="text-xs text-gray-600 leading-relaxed">Estamos desenvolvendo nosso aplicativo para iOS e Android.</p>
+                  </div>
+                </div>
+                <div className="relative mx-auto w-40 h-40 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 mb-3">
+                  {qrDataUrl ? (
+                    <img src={qrDataUrl} alt="QR code (em breve)" className="w-full h-full object-contain blur-[2px] opacity-90" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100" />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="px-3 py-1.5 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300 shadow-sm">Em breve</span>
+                  </div>
+                </div>
+                <p className="text-xs leading-relaxed text-gray-600">
+                  O aplicativo está em desenvolvimento. Assim que estiver pronto, você poderá instalar escaneando o QR code e aproveitar a experiência completa no celular.
+                </p>
+              </div>
+            </Dropdown>
+          )}
           {user ? (
             <Dropdown
               align="right"
@@ -592,12 +795,37 @@ export default function Sidebar({
                   <div
                     className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
                   >
-                    {renderAvatar(user, "w-10 h-10")}
+                    <div className="relative">
+                      <Avatar
+                        name={user.nome}
+                        id={user.id}
+                        imageUrl={user.avatarUrl}
+                        size="md"
+                      />
+                      {user.tipoUsuario === "dono" && (
+                        <span className="absolute -top-1 -right-1 bg-gradient-to-br from-yellow-400 to-yellow-600 p-0.5 rounded-full shadow-md border border-white">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                     {!isCollapsed && (
-                      <div className="min-w-0 text-left">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {user.nome}
-                        </p>
+                      <div className="min-w-0 text-left flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {user.nome}
+                          </p>
+                          {user.tipoUsuario === "dono" ? (
+                            <span className="px-1.5 py-0.5 bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 text-[9px] font-bold rounded-full border border-yellow-300 whitespace-nowrap">
+                              DONO
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-[9px] font-bold rounded-full border border-blue-300 whitespace-nowrap">
+                              PRO
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500 truncate">
                           {user.email}
                         </p>
@@ -608,31 +836,72 @@ export default function Sidebar({
               }
             >
               <div className="px-4 py-3 border-b border-gray-200">
-                <p className="text-sm font-medium text-gray-900">{user.nome}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-gray-700">
-                    Plano: {subscription?.plan?.name || "—"}
-                  </span>
-                  {subscription?.nextDueDate && (
-                    <span className="text-xs text-gray-500">
-                      {(() => {
-                        const today = new Date();
-                        const dueDate = new Date(subscription.nextDueDate);
-                        const diffTime = dueDate.getTime() - today.getTime();
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        
-                        if (diffDays < 0) {
-                          return "Expirado";
-                        } else if (diffDays === 0) {
-                          return "Expira hoje";
-                        } else if (diffDays === 1) {
-                          return "1 dia";
-                        } else {
-                          return `${diffDays} dias`;
-                        }
-                      })()}
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-900">{user.nome}</p>
+                  {user.tipoUsuario === "dono" ? (
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 text-[10px] font-bold rounded-full border border-yellow-300">
+                      DONO
                     </span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-[10px] font-bold rounded-full border border-blue-300">
+                      PRO
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">{user.email}</p>
+                <div className="mt-2">
+                  {subscription?.isInherited ? (
+                    <div className="space-y-1">
+                      <div className="flex items-start gap-1.5">
+                        <svg
+                          className="w-3 h-3 text-blue-600 mt-0.5 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs text-gray-700 block">
+                            Plano: <span className="font-semibold">{subscription.plan.name}</span>
+                          </span>
+                          <p className="text-[10px] text-blue-600 leading-tight mt-0.5">
+                            Você tem acesso ao plano {subscription.ownerPlanName} como convidado de {subscription.ownerName}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-700">
+                        Plano: {subscription?.plan?.name || "—"}
+                      </span>
+                      {subscription?.nextDueDate && (
+                        <span className="text-xs text-gray-500">
+                          {(() => {
+                            const today = new Date();
+                            const dueDate = new Date(subscription.nextDueDate);
+                            const diffTime = dueDate.getTime() - today.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                            if (diffDays < 0) {
+                              return "Expirado";
+                            } else if (diffDays === 0) {
+                              return "Expira hoje";
+                            } else if (diffDays === 1) {
+                              return "1 dia";
+                            } else {
+                              return `${diffDays} dias`;
+                            }
+                          })()}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

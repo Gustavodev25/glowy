@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Dropdown from "@/components/Dropdown";
+import Avatar from "@/components/Avatar";
 
 interface User {
   id: string;
@@ -39,34 +40,6 @@ export default function TopbarManager({
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
-  };
-
-  const getInitials = (nome: string) => {
-    const names = nome.split(" ");
-    if (names.length >= 2) {
-      return `${names[0][0]}${names[1][0]}`.toUpperCase();
-    }
-    return nome.substring(0, 2).toUpperCase();
-  };
-
-  const renderAvatar = (user: User, className: string = "w-10 h-10") => {
-    if (user.avatarUrl) {
-      return (
-        <img
-          src={user.avatarUrl}
-          alt={`Avatar de ${user.nome}`}
-          className={`${className} rounded-full object-cover`}
-        />
-      );
-    }
-
-    return (
-      <div
-        className={`${className} rounded-full bg-[#C5837B] text-white font-semibold flex items-center justify-center`}
-      >
-        {getInitials(user.nome)}
-      </div>
-    );
   };
 
   // Função para gerar breadcrumb baseado na rota atual
@@ -188,14 +161,37 @@ export default function TopbarManager({
           {user ? (
             <Dropdown
               trigger={
-                <button className="hover:opacity-80 transition-opacity duration-200">
-                  {renderAvatar(user)}
+                <button className="hover:opacity-80 transition-opacity duration-200 relative">
+                  <Avatar
+                    name={user.nome}
+                    id={user.id}
+                    imageUrl={user.avatarUrl}
+                    size="md"
+                  />
+                  {user.tipoUsuario === "dono" && (
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-br from-yellow-400 to-yellow-600 p-1 rounded-full shadow-md border border-white">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z" />
+                      </svg>
+                    </span>
+                  )}
                 </button>
               }
               align="right"
             >
               <div className="px-4 py-2 border-b border-gray-200">
-                <p className="text-sm font-medium text-gray-900">{user.nome}</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-900">{user.nome}</p>
+                  {user.tipoUsuario === "dono" ? (
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 text-[10px] font-bold rounded-full border border-yellow-300">
+                      DONO
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-[10px] font-bold rounded-full border border-blue-300">
+                      PRO
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">{user.email}</p>
               </div>
 

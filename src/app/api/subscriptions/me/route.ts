@@ -9,14 +9,64 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const subscription = await prisma.subscription.findFirst({
-      where: { userId: user.userId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        plan: true,
-        paymentMethod: true,
+    // Busca dados do usuário atual
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: {
+        id: true,
+        tipoUsuario: true,
+        funcionarios: {
+          include: {
+            empresa: {
+              include: {
+                dono: true
+              }
+            }
+          }
+        }
       },
     });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
+    let subscription;
+    let isInherited = false;
+    let ownerName = null;
+    let ownerPlanName = null;
+
+    // Se for usuário convidado (tipo "usuario"), busca o plano do dono
+    if (currentUser.tipoUsuario === 'usuario' && currentUser.funcionarios.length > 0) {
+      const empresa = currentUser.funcionarios[0].empresa;
+      const donoId = empresa.donoId;
+
+      // Busca a subscription do dono
+      subscription = await prisma.subscription.findFirst({
+        where: { userId: donoId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          plan: true,
+          paymentMethod: true,
+        },
+      });
+
+      if (subscription) {
+        isInherited = true;
+        ownerName = empresa.dono.nome;
+        ownerPlanName = subscription.plan.name;
+      }
+    } else {
+      // Se for dono, busca sua própria subscription
+      subscription = await prisma.subscription.findFirst({
+        where: { userId: user.userId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          plan: true,
+          paymentMethod: true,
+        },
+      });
+    }
 
     if (!subscription) {
       return NextResponse.json({ subscription: null });
@@ -33,6 +83,9 @@ export async function GET(request: NextRequest) {
         nextDueDate: subscription.nextDueDate,
         startDate: subscription.startDate,
         endDate: subscription.endDate,
+        isInherited,
+        ownerName,
+        ownerPlanName,
         plan: {
           id: subscription.plan.id,
           name: subscription.plan.name,

@@ -78,6 +78,20 @@ interface Agendamento {
   };
 }
 
+interface User {
+  id: string;
+  nome: string;
+  email: string;
+  tipoUsuario: string;
+}
+
+interface TeamMember {
+  id: string;
+  nome: string | null;
+  email: string;
+  cargo: string | null;
+}
+
 export default function MinhaAgendaPage() {
   const toast = useToast();
   const [scheduleExpanded, setScheduleExpanded] = useState(true);
@@ -93,6 +107,11 @@ export default function MinhaAgendaPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Estados para controle de usuário e equipe
+  const [user, setUser] = useState<User | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>("todos");
 
   // Estados de filtro e busca
   const [searchTerm, setSearchTerm] = useState("");
@@ -275,15 +294,60 @@ export default function MinhaAgendaPage() {
   };
 
   useEffect(() => {
+    fetchUserData();
     fetchAgendamentos();
-  }, [currentMonth]);
+  }, [currentMonth, selectedProfessionalId]);
+
+  const fetchUserData = async () => {
+    try {
+      // Buscar dados da empresa (que inclui dados do usuário)
+      const empresaResponse = await fetch('/api/empresa', {
+        credentials: 'include',
+      });
+
+      if (empresaResponse.ok) {
+        const empresaData = await empresaResponse.json();
+
+        if (empresaData.user) {
+          setUser({
+            id: empresaData.user.id,
+            nome: empresaData.user.nome,
+            email: empresaData.user.email,
+            tipoUsuario: empresaData.user.tipoUsuario
+          });
+
+          // Se for dono, buscar equipe
+          if (empresaData.user.tipoUsuario === 'dono') {
+            const teamResponse = await fetch('/api/empresa/equipe', {
+              credentials: 'include',
+            });
+
+            if (teamResponse.ok) {
+              const teamData = await teamResponse.json();
+              // Filtrar apenas membros ativos (não convites)
+              const membrosAtivos = teamData.equipe?.filter((m: any) => m.tipo === 'membro') || [];
+              setTeamMembers(membrosAtivos);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados do usuário:', error);
+    }
+  };
 
   const fetchAgendamentos = async () => {
     try {
       setLoading(true);
 
+      // Construir URL com filtro de profissional se necessário
+      let url = '/api/agendamentos/empresa/meus';
+      if (selectedProfessionalId && selectedProfessionalId !== 'todos') {
+        url += `?profissionalId=${selectedProfessionalId}`;
+      }
+
       // Buscar todos os agendamentos (sem filtro de status)
-      const response = await fetch(`/api/agendamentos/empresa/meus`, {
+      const response = await fetch(url, {
         credentials: "include",
       });
 
@@ -569,8 +633,47 @@ export default function MinhaAgendaPage() {
       `}</style>
       <PageHeader
         title="Minha Agenda"
-        description="Visualize e gerencie todos os seus agendamentos"
+        description={
+          user?.tipoUsuario === 'dono'
+            ? 'Visualize e gerencie os agendamentos da sua equipe'
+            : 'Visualize e gerencie todos os seus agendamentos'
+        }
       />
+
+      {/* Seletor de Profissional (apenas para donos) */}
+      {user?.tipoUsuario === 'dono' && teamMembers.length > 0 && (
+        <div className="px-4 md:px-6 pt-4 pb-2">
+          <div className="relative">
+            <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
+            <div className="relative z-10 bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center gap-3">
+                <CardIcon icon="users" color="#C5837B" size="md" />
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Visualizar agenda de:
+                  </label>
+                  <Select
+                    value={selectedProfessionalId}
+                    onChange={(value) => setSelectedProfessionalId(value)}
+                    options={[
+                      { value: "todos", label: "Todos os profissionais" },
+                      { value: user.id, label: `${user.nome} (Você)` },
+                      ...teamMembers
+                        .filter((m) => m.id !== user.id)
+                        .map((member) => ({
+                          value: member.id,
+                          label: member.nome || member.email,
+                        })),
+                    ]}
+                    placeholder="Selecione um profissional"
+                    containerClassName="w-full md:w-80"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Barra de Busca e Filtros */}
       <div className="px-4 md:px-6 pt-4 pb-2">

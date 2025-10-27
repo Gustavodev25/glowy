@@ -484,7 +484,7 @@ export default function MeusServicosPage() {
 
                                 {/* Ações */}
                                 <div className="flex items-center gap-2">
-                                  <Tooltip content="Editar serviço" position="top" delay={100}>
+                                  <Tooltip content="Editar serviço" position="bottom" delay={100}>
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -495,7 +495,7 @@ export default function MeusServicosPage() {
                                       <EditIcon />
                                     </Button>
                                   </Tooltip>
-                                  <Tooltip content="Excluir serviço" position="top" delay={100}>
+                                  <Tooltip content="Excluir serviço" position="bottom" delay={100}>
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -575,7 +575,7 @@ export default function MeusServicosPage() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-center space-x-2">
-                                <Tooltip content="Editar serviço" position="top" delay={100}>
+                                <Tooltip content="Editar serviço" position="bottom" delay={100}>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -586,7 +586,7 @@ export default function MeusServicosPage() {
                                     <EditIcon />
                                   </Button>
                                 </Tooltip>
-                                <Tooltip content="Excluir serviço" position="top" delay={100}>
+                                <Tooltip content="Excluir serviço" position="bottom" delay={100}>
                                   <Button
                                     variant="ghost"
                                     size="sm"

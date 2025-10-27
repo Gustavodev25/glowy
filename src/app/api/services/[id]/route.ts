@@ -26,28 +26,48 @@ export async function PUT(
       );
     }
 
-    // Buscar as configurações da empresa do usuário
-    const companySettings = await prisma.companySettings.findUnique({
-      where: { userId },
-      select: { id: true },
+    // Buscar dados do usuário com suas empresas e funcionários
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        empresas: true,
+        funcionarios: {
+          include: {
+            empresa: true,
+          },
+        },
+      },
     });
 
-    if (!companySettings) {
+    if (!user) {
       return NextResponse.json(
-        { error: "Configurações da empresa não encontradas" },
+        { error: "Usuário não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Determinar a empresa (dono tem empresas[], funcionário tem funcionarios[])
+    let empresaId: string;
+    if (user.tipoUsuario === 'dono' && user.empresas.length > 0) {
+      empresaId = user.empresas[0].id;
+    } else if (user.funcionarios.length > 0) {
+      empresaId = user.funcionarios[0].empresaId;
+    } else {
+      return NextResponse.json(
+        { error: "Empresa não encontrada" },
         { status: 404 }
       );
     }
 
     // Verificar se o serviço pertence à empresa do usuário
-    const existingService = await prisma.service.findFirst({
+    const existingServico = await prisma.servico.findFirst({
       where: {
         id,
-        companyId: companySettings.id,
+        empresaId,
       },
     });
 
-    if (!existingService) {
+    if (!existingServico) {
       return NextResponse.json(
         { error: "Serviço não encontrado" },
         { status: 404 }
@@ -55,24 +75,24 @@ export async function PUT(
     }
 
     // Atualizar serviço
-    const service = await prisma.service.update({
+    const servico = await prisma.servico.update({
       where: { id },
       data: {
-        name,
-        description: description || null,
-        duration: parseInt(duration),
-        price: price ? parseFloat(price) : null,
+        nome: name,
+        descricao: description || null,
+        duracao: parseInt(duration),
+        preco: price ? parseFloat(price) : 0,
         imageUrl: imageUrl || null,
-        active: active !== undefined ? active : true,
+        ativo: active !== undefined ? active : true,
       },
       select: {
         id: true,
-        name: true,
-        description: true,
-        duration: true,
-        price: true,
+        nome: true,
+        descricao: true,
+        duracao: true,
+        preco: true,
         imageUrl: true,
-        active: true,
+        ativo: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -80,15 +100,15 @@ export async function PUT(
 
     return NextResponse.json({
       service: {
-        id: service.id,
-        name: service.name,
-        description: service.description,
-        duration: service.duration,
-        price: service.price ? Number(service.price) : null,
-        imageUrl: service.imageUrl,
-        active: service.active,
-        createdAt: service.createdAt,
-        updatedAt: service.updatedAt,
+        id: servico.id,
+        name: servico.nome,
+        description: servico.descricao,
+        duration: servico.duracao,
+        price: servico.preco ? Number(servico.preco) : null,
+        imageUrl: servico.imageUrl,
+        active: servico.ativo,
+        createdAt: servico.createdAt,
+        updatedAt: servico.updatedAt,
       },
     });
   } catch (error) {
@@ -114,28 +134,48 @@ export async function DELETE(
     const userId = auth.user.id;
     const { id } = await params;
 
-    // Buscar as configurações da empresa do usuário
-    const companySettings = await prisma.companySettings.findUnique({
-      where: { userId },
-      select: { id: true },
+    // Buscar dados do usuário com suas empresas e funcionários
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        empresas: true,
+        funcionarios: {
+          include: {
+            empresa: true,
+          },
+        },
+      },
     });
 
-    if (!companySettings) {
+    if (!user) {
       return NextResponse.json(
-        { error: "Configurações da empresa não encontradas" },
+        { error: "Usuário não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Determinar a empresa (dono tem empresas[], funcionário tem funcionarios[])
+    let empresaId: string;
+    if (user.tipoUsuario === 'dono' && user.empresas.length > 0) {
+      empresaId = user.empresas[0].id;
+    } else if (user.funcionarios.length > 0) {
+      empresaId = user.funcionarios[0].empresaId;
+    } else {
+      return NextResponse.json(
+        { error: "Empresa não encontrada" },
         { status: 404 }
       );
     }
 
     // Verificar se o serviço pertence à empresa do usuário
-    const existingService = await prisma.service.findFirst({
+    const existingServico = await prisma.servico.findFirst({
       where: {
         id,
-        companyId: companySettings.id,
+        empresaId,
       },
     });
 
-    if (!existingService) {
+    if (!existingServico) {
       return NextResponse.json(
         { error: "Serviço não encontrado" },
         { status: 404 }
@@ -143,9 +183,9 @@ export async function DELETE(
     }
 
     // Soft delete - marcar como inativo
-    await prisma.service.update({
+    await prisma.servico.update({
       where: { id },
-      data: { active: false },
+      data: { ativo: false },
     });
 
     return NextResponse.json({ message: "Serviço removido com sucesso" });

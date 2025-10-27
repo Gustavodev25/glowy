@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useToast } from "@/contexts/ToastContext";
 import Modal from "@/components/Modal";
 import Input from "@/components/visual/Input";
@@ -28,6 +27,9 @@ interface SubscriptionData {
   nextDueDate?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  isInherited?: boolean;
+  ownerName?: string | null;
+  ownerPlanName?: string | null;
   plan: {
     id: string;
     name: string;
@@ -304,9 +306,6 @@ export default function PagamentosTab() {
     load();
   }, []);
 
-  // Cores do ícone baseado no plano
-  const planColor = "text-[#C5837B]";
-
   const handleRemove = async (id: string) => {
     try {
       const res = await fetch(`/api/payment-methods/${id}`, { method: 'DELETE', credentials: 'include' });
@@ -355,22 +354,6 @@ export default function PagamentosTab() {
   const isPixSubscription = subscription?.paymentType === 'PIX' || subscription?.paymentMethod?.type === 'PIX';
   const needsCardForAutoRenew = !!subscription && !!isPixSubscription && !hasActiveCard;
 
-  const handleDownloadReport = (period: 'monthly' | 'yearly' | 'all' | 'custom') => {
-    try {
-      let url = `/api/reports/payments?period=${period}`;
-      if (period === 'custom') {
-        const start = window.prompt('Data inicial (YYYY-MM-DD)');
-        if (!start) return;
-        const end = window.prompt('Data final (YYYY-MM-DD)');
-        if (!end) return;
-        url = `/api/reports/payments?period=custom&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-      }
-      window.open(url, '_blank');
-    } catch (e) {
-      console.error('Erro ao solicitar relatórios:', e);
-    }
-  };
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -394,110 +377,125 @@ export default function PagamentosTab() {
 
           {subscription ? (
             <>
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Plano</p>
-                  <div className="flex items-center gap-2">
-                    {subscription.plan.iconUrl ? (
-                      <Image
-                        src={subscription.plan.iconUrl}
-                        alt={subscription.plan.name}
-                        width={18}
-                        height={18}
-                        className="rounded object-cover"
+              {subscription.isInherited ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className={planColor}
-                      >
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                        <path d="M18 4a1 1 0 0 1 .783 .378l.074 .108l3 5a1 1 0 0 1 -.032 1.078l-.08 .103l-8.53 9.533a1.7 1.7 0 0 1 -1.215 .51c-.4 0 -.785 -.14 -1.11 -.417l-.135 -.126l-8.5 -9.5a1 1 0 0 1 -.172 -1.067l.06 -.115l3.013 -5.022l.064 -.09a.982 .982 0 0 1 .155 -.154l.089 -.064l.088 -.05l.05 -.023l.06 -.025l.109 -.032l.112 -.02l.117 -.005h12zm-8.886 3.943a1 1 0 0 0 -1.371 .343l-.6 1l-.06 .116a1 1 0 0 0 .177 1.07l2 2.2l.09 .088a1 1 0 0 0 1.323 -.02l.087 -.09a1 1 0 0 0 -.02 -1.323l-1.501 -1.65l.218 -.363l.055 -.103a1 1 0 0 0 -.398 -1.268z" />
-                      </svg>
-                    )}
-                    <p className="text-sm font-medium text-gray-900">
-                      {subscription.plan.name}
-                    </p>
+                    </svg>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                        Acesso de Conta Convidada
+                      </h4>
+                      <p className="text-sm text-blue-800">
+                        Você tem acesso ao plano <span className="font-semibold">{subscription.ownerPlanName}</span> como convidado da conta de <span className="font-semibold">{subscription.ownerName}</span>.
+                      </p>
+                      <p className="text-xs text-blue-700 mt-2">
+                        O gerenciamento de pagamentos é realizado pelo dono da conta. Você tem acesso a todos os recursos do plano sem custos adicionais.
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-500 mb-1">Valor</p>
-                  <p className="text-sm font-semibold text-gray-900">
-                    R$ {Number(subscription.amount).toFixed(2).replace(".", ",")} {subscription.cycle === 'YEARLY' ? '/ano' : '/mês'}
-                  </p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Plano</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {subscription.plan.name}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 mb-1">Valor</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        R$ {Number(subscription.amount).toFixed(2).replace(".", ",")} {subscription.cycle === 'YEARLY' ? '/ano' : '/mês'}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-between py-4 border-t border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Próxima cobrança</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {subscription.nextDueDate
-                      ? new Date(subscription.nextDueDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-                      : '—'}
-                  </p>
-                </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                  {subscription.status === 'active' ? 'Ativa' : subscription.status}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between py-4 border-t border-gray-100">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Próxima cobrança</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {subscription.nextDueDate
+                          ? new Date(subscription.nextDueDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+                          : '—'}
+                      </p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                      {subscription.status === 'active' ? 'Ativa' : subscription.status}
+                    </span>
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <p className="text-sm text-gray-600">Nenhuma assinatura ativa.</p>
           )}
 
-          <div className="relative py-4 border-t border-gray-100">
-            <div className={`${needsCardForAutoRenew ? 'blur-[2px] pointer-events-none select-none' : ''} flex items-center justify-between`}>
-              <div>
-                <p className="text-sm font-medium text-gray-900 mb-1">
-                  Renovação automática
-                </p>
-                <p className="text-xs text-gray-500">
-                  {autoRenew
-                    ? "Sua assinatura será renovada automaticamente"
-                    : "Você precisará renovar manualmente"}
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={autoRenew}
-                  onChange={handleToggleAutoRenew}
-                  disabled={needsCardForAutoRenew}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#C5837B]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C5837B]"></div>
-              </label>
-            </div>
-            {needsCardForAutoRenew && (
-              <div className="absolute inset-0 flex items-center justify-between rounded-lg bg-white/70 backdrop-blur-sm p-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Renovação automática indisponível</p>
-                  <p className="text-xs text-gray-700">Para ativar a cobrança automática, cadastre um cartão de crédito.</p>
+          {!subscription?.isInherited && (
+            <>
+              <div className="relative py-4 border-t border-gray-100">
+                <div className={`${needsCardForAutoRenew ? 'blur-[2px] pointer-events-none select-none' : ''} flex items-center justify-between`}>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      Renovação automática
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {autoRenew
+                        ? "Sua assinatura será renovada automaticamente"
+                        : "Você precisará renovar manualmente"}
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoRenew}
+                      onChange={handleToggleAutoRenew}
+                      disabled={needsCardForAutoRenew}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#C5837B]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C5837B]"></div>
+                  </label>
                 </div>
-                <a href="#payment-methods-section" className="text-sm text-[#C5837B] hover:text-[#B0736B] font-medium">
-                  Cadastrar cartão
+                {needsCardForAutoRenew && (
+                  <div className="absolute inset-0 flex items-center justify-between rounded-lg bg-white/70 backdrop-blur-sm p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Renovação automática indisponível</p>
+                      <p className="text-xs text-gray-700">Para ativar a cobrança automática, cadastre um cartão de crédito.</p>
+                    </div>
+                    <a href="#payment-methods-section" className="text-sm text-[#C5837B] hover:text-[#B0736B] font-medium">
+                      Cadastrar cartão
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-gray-100">
+                <a href="/views/planos" className="text-sm text-[#C5837B] hover:text-[#B0736B] font-medium transition-colors">
+                  Alterar plano →
                 </a>
               </div>
-            )}
-          </div>
-
-          <div className="pt-4 border-t border-gray-100">
-            <a href="/views/planos" className="text-sm text-[#C5837B] hover:text-[#B0736B] font-medium transition-colors">
-              Alterar plano →
-            </a>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Métodos de Pagamento */}
-      <div className="relative">
-        <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
-        <div id="payment-methods-section" className="relative z-10 bg-white rounded-lg border border-gray-200 p-6">
+      {/* Métodos de Pagamento - Apenas para contas não convidadas */}
+      {!subscription?.isInherited && (
+        <div className="relative">
+          <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
+          <div id="payment-methods-section" className="relative z-10 bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900">
               Métodos de Pagamento
@@ -599,8 +597,10 @@ export default function PagamentosTab() {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Histórico de Faturas */}
+      {/* Histórico de Faturas - Apenas para contas não convidadas */}
+      {!subscription?.isInherited && (
       <div className="relative">
         <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
         <div className="relative z-10 bg-white rounded-lg border border-gray-200 p-6">
@@ -638,181 +638,10 @@ export default function PagamentosTab() {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Relatórios Personalizados */}
-      <div className="relative">
-        <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
-        <div className="relative z-10 bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">
-            Relatórios Personalizados
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Button onClick={() => handleDownloadReport('monthly')} variant="outline" className="flex items-center justify-between p-4 h-auto hover:border-[#C5837B] hover:bg-gray-50 group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">
-                    Relatório Mensal
-                  </p>
-                  <p className="text-xs text-gray-500">Últimos 30 dias</p>
-                </div>
-              </div>
-              <svg
-                className="w-5 h-5 text-gray-400 group-hover:text-[#C5837B] transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            </Button>
-
-            <Button onClick={() => handleDownloadReport('yearly')} variant="outline" className="flex items-center justify-between p-4 h-auto hover:border-[#C5837B] hover:bg-gray-50 group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-green-50 flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">
-                    Relatório Anual
-                  </p>
-                  <p className="text-xs text-gray-500">Últimos 12 meses</p>
-                </div>
-              </div>
-              <svg
-                className="w-5 h-5 text-gray-400 group-hover:text-[#C5837B] transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            </Button>
-
-            <Button onClick={() => handleDownloadReport('all')} variant="outline" className="flex items-center justify-between p-4 h-auto hover:border-[#C5837B] hover:bg-gray-50 group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-purple-50 flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">
-                    Exportar Todas
-                  </p>
-                  <p className="text-xs text-gray-500">Histórico completo</p>
-                </div>
-              </div>
-              <svg
-                className="w-5 h-5 text-gray-400 group-hover:text-[#C5837B] transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            </Button>
-
-            <Button onClick={() => handleDownloadReport('custom')} variant="outline" className="flex items-center justify-between p-4 h-auto hover:border-[#C5837B] hover:bg-gray-50 group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-orange-50 flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-orange-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">
-                    Período Customizado
-                  </p>
-                  <p className="text-xs text-gray-500">Escolher datas</p>
-                </div>
-              </div>
-              <svg
-                className="w-5 h-5 text-gray-400 group-hover:text-[#C5837B] transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            </Button>
-          </div>
-
-          <p className="text-xs text-gray-500 mt-4">
-            Os relatórios são gerados em formato PDF e incluem todas as
-            transações, faturas e detalhes de pagamento do período selecionado.
-          </p>
-        </div>
-      </div>
-
-      {/* Cancelar Assinatura */}
+      {/* Cancelar Assinatura - Apenas para contas não convidadas */}
+      {!subscription?.isInherited && (
       <div className="relative">
         <div className="absolute inset-1 translate-x-2 translate-y-2 rounded-lg border border-gray-200 z-0 pointer-events-none"></div>
         <div className="relative z-10 bg-white rounded-lg border border-gray-200 p-6">
@@ -832,6 +661,7 @@ export default function PagamentosTab() {
           </Button>
         </div>
       </div>
+      )}
 
       {/* Modal Adicionar Cartão */}
       <Modal isOpen={showAddCardModal} onClose={() => setShowAddCardModal(false)} title="Adicionar Cartão" maxWidth="md">

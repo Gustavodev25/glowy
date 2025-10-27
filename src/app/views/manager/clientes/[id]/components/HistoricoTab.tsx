@@ -25,7 +25,7 @@ interface HistoricoTabProps {
 
 export default function HistoricoTab({
   clienteId,
-  agendamentos,
+  agendamentos = [],
 }: HistoricoTabProps) {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -47,12 +47,14 @@ export default function HistoricoTab({
     return labels[status] || status;
   };
 
-  const agendamentosOrdenados = [...agendamentos].sort(
+  // Garantir que agendamentos é um array antes de ordenar
+  const agendamentosArray = Array.isArray(agendamentos) ? agendamentos : [];
+  const agendamentosOrdenados = [...agendamentosArray].sort(
     (a, b) =>
       new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime(),
   );
 
-  if (agendamentos.length === 0) {
+  if (agendamentosArray.length === 0) {
     return (
       <div className="relative max-w-lg mx-auto">
         {/* Borda de trás estática */}

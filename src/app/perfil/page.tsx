@@ -15,6 +15,7 @@ import { useToast } from "@/contexts/ToastContext";
 import SecurityTab from "./SecurityTab";
 import PagamentosTab from "./PagamentosTab";
 import BookLoader from "@/components/BookLoader";
+import Avatar from "@/components/Avatar";
 
 // Componente de Skeleton para a aba Geral
 const GeralTabSkeleton = () => (
@@ -435,17 +436,13 @@ export default function PerfilPage() {
                   {/* Avatar Upload */}
                   <div className="flex items-center gap-6 pb-6 border-b border-gray-200">
                     <div className="relative">
-                      {croppedImageUrl ? (
-                        <img
-                          src={croppedImageUrl}
-                          alt="Avatar"
-                          className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-                        />
-                      ) : (
-                        <div className="w-24 h-24 rounded-full bg-[#C5837B] flex items-center justify-center text-white text-3xl font-semibold border-2 border-gray-200">
-                          {user?.nome?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                      <Avatar
+                        name={user?.nome || ""}
+                        id={user?.id || ""}
+                        imageUrl={croppedImageUrl || user?.avatarUrl}
+                        size="2xl"
+                        className="border-2 border-gray-200"
+                      />
                       <label
                         htmlFor="avatar-upload"
                         className="absolute bottom-0 right-0 w-8 h-8 bg-white text-gray-700 font-semibold border border-gray-300 rounded-full shadow-[3px_3px_0px_#e5e7eb] hover:bg-gray-50 transition-transform transition-shadow duration-100 ease-linear focus:outline-none overflow-hidden active:translate-x-[3px] active:translate-y-[3px] active:shadow-none cursor-pointer flex items-center justify-center"

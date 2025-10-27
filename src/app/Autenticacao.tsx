@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { FlipWords } from "@/components/FlipWords";
 import Login from "./components/Login";
 import Cadastro from "./components/Cadastro";
 import TipoUsuario from "./components/TipoUsuario";
@@ -117,14 +119,24 @@ export default function Autenticacao() {
 
   // Frases para alternar
   const phrases = [
-    "Agende seus serviços de forma simples e rápida!",
+    "Agende seus servicos de forma simples e rapida!",
     "Gerencie sua agenda e clientes com facilidade.",
-    "Controle financeiro completo do seu negócio.",
+    "Controle financeiro completo do seu negocio.",
     "Clientes podem agendar 24h por dia!",
-    "Relatórios detalhados de vendas e lucros.",
+    "Relatorios detalhados de vendas e lucros.",
     "Sistema completo para donos e clientes.",
-    "Organize horários e maximize seus ganhos!",
-    "Agendamentos online nunca foram tão fáceis.",
+    "Organize horarios e maximize seus ganhos!",
+    "Agendamentos online nunca foram tao faceis.",
+    "Receba pagamentos online com Pix e cartao.",
+    "Lembretes automaticos por WhatsApp e SMS.",
+    "Confirmacao de presenca e fila de espera.",
+    "Programa de fidelidade e cashback.",
+    "Agendamento por profissional e servico.",
+    "Gestao de equipe e comissoes.",
+    "Catalogo compartilhavel e avaliacoes.",
+    "Relatorios de vendas e ocupacao.",
+    "Integracao com Google Agenda.",
+    "Multiloja com controle por unidade."
   ];
 
   // Variáveis para controlar os timers
@@ -208,6 +220,8 @@ export default function Autenticacao() {
             // Digitar nova frase
             typeText(typingTextRef.current, phrases[currentIndex], 80);
           }
+          // Reinicia animação do BlurFade a cada troca de frase
+          
         }, 500);
 
         // Próxima frase
@@ -258,8 +272,7 @@ export default function Autenticacao() {
       // Animação do lado direito simplificada
       if (
         imageRef.current &&
-        speechBubbleRef.current &&
-        typingTextRef.current
+        speechBubbleRef.current
       ) {
         gsap.fromTo(
           imageRef.current,
@@ -290,8 +303,7 @@ export default function Autenticacao() {
             ease: "power2.out",
             onComplete: () => {
               // Iniciar rotação de frases
-              const cleanup = startPhraseRotation();
-              (window as any).phraseRotationCleanup = cleanup;
+              // FlipWords controla a animação e rotação do texto
             },
           },
         );
@@ -367,7 +379,7 @@ export default function Autenticacao() {
 
 
       {/* Lado direito - Gradiente com imagem, título e subtítulo */}
-      <div className="flex flex-[1] p-4 sm:p-6 lg:p-4 min-h-[300px] lg:min-h-screen">
+      <div className="hidden lg:flex flex-[1] p-4 sm:p-6 lg:p-4 min-h-[300px] lg:min-h-screen">
         <div
           ref={rightSideRef}
           className="w-full h-full rounded-lg overflow-hidden relative flex flex-col items-center justify-center py-6 sm:py-8"
@@ -377,22 +389,22 @@ export default function Autenticacao() {
           }}
         >
           {/* Balão de fala */}
-          <div
+          <motion.div layout
             ref={speechBubbleRef}
-            className="relative bg-white rounded-2xl p-3 sm:p-4 shadow-lg max-w-[280px] sm:max-w-xs mb-3 sm:mb-4 mx-4"
+            className="relative inline-block bg-white rounded-2xl p-3 sm:p-4 shadow-lg w-auto max-w-[90%] sm:max-w-[520px] mb-3 sm:mb-4 mx-4"
           >
             {/* Setinha apontando para baixo */}
             <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 sm:border-l-8 border-r-6 sm:border-r-8 border-t-6 sm:border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
 
             {/* Texto com animação de digitação */}
-            <span
-              ref={typingTextRef}
-              className="text-gray-800 text-xs sm:text-sm font-medium"
-            ></span>
-
-            {/* Cursor piscante */}
-            <span className="animate-pulse text-gray-800">|</span>
-          </div>
+            <div className="min-h-[20px] sm:min-h-[24px]">
+              <FlipWords
+                words={phrases}
+                duration={8000}
+                className="text-gray-800 text-xs sm:text-sm font-medium px-0"
+              />
+            </div>
+          </motion.div>
 
           {/* Imagem */}
           <div
@@ -410,3 +422,6 @@ export default function Autenticacao() {
     </div>
   );
 }
+
+
+

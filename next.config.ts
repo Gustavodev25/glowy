@@ -13,11 +13,7 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Configurações de encoding
-  experimental: {
-    // Removido serverExternalPackages que estava causando warnings
-    // serverExternalPackages: ["@prisma/client", "argon2"],
-  },
+  // Next.js 16: Turbopack é o padrão, não precisa de flags experimentais
 
   // Garantir que variáveis de ambiente estejam disponíveis
   env: {
@@ -48,7 +44,13 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Configuração webpack simplificada
+  // Configuração Turbopack (Next.js 16)
+  turbopack: {
+    // Configuração vazia para usar Turbopack com as configurações padrão
+    // e silenciar o warning sobre webpack config
+  },
+
+  // Configuração webpack para fallback (se optar por usar --webpack)
   webpack: (config, { isServer }) => {
     // Fix para módulos Node.js no client-side
     if (!isServer) {

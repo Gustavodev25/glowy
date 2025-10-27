@@ -56,7 +56,7 @@ export default function ManagerLayout({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: authLoading, isAuthenticated, isDono } = useAuth();
+  const { user, loading: authLoading, isAuthenticated, isDono, isUsuario } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [adminMode, setAdminMode] = useState(false);
@@ -118,15 +118,17 @@ export default function ManagerLayout({
       return;
     }
 
-    // Se não é dono, redireciona para home
-    if (!isDono) {
+    // Se não é dono nem profissional, redireciona para home
+    if (!isDono && !isUsuario) {
       router.push("/views/home");
       return;
     }
 
-    // Verificar onboarding em background de forma não bloqueante
-    checkOnboardingStatusAsync();
-  }, [authLoading, isAuthenticated, isDono, router]);
+    // Verificar onboarding em background apenas para donos
+    if (isDono) {
+      checkOnboardingStatusAsync();
+    }
+  }, [authLoading, isAuthenticated, isDono, isUsuario, router]);
 
   // Verificação de onboarding assíncrona que não bloqueia renderização
   const checkOnboardingStatusAsync = () => {
@@ -173,8 +175,8 @@ export default function ManagerLayout({
     );
   }
 
-  // Se não está autenticado ou não é dono, não renderizar nada (redirecionamento acontece no useEffect)
-  if (!isAuthenticated || !isDono) {
+  // Se não está autenticado ou não é dono/profissional, não renderizar nada (redirecionamento acontece no useEffect)
+  if (!isAuthenticated || (!isDono && !isUsuario)) {
     return null;
   }
 

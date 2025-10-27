@@ -111,7 +111,11 @@ export default function PlanosPage() {
           ...plan,
           recommended: plan.recommended || false,
         }));
-        setPlans(plansWithRecommended);
+        // Ordenar planos por preço (do mais barato ao mais caro)
+        const sortedPlans = plansWithRecommended.sort((a: Plan, b: Plan) => {
+          return Number(a.price) - Number(b.price);
+        });
+        setPlans(sortedPlans);
       }
     } catch (error) {
       console.error("Erro ao buscar planos:", error);
@@ -185,20 +189,20 @@ export default function PlanosPage() {
     <div className="h-screen overflow-hidden bg-gray-50">
       <Topbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Header */}
-        <div ref={headerRef} className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+        <div ref={headerRef} className="text-center mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
             Escolha o Plano Perfeito
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-4">
             Selecione o plano que melhor se adequa às necessidades do seu
             negócio
           </p>
         </div>
 
         {/* Toggle Mensal/Anual */}
-        <div ref={toggleRef} className="flex justify-center mb-6">
+        <div ref={toggleRef} className="flex justify-center mb-4 sm:mb-6">
           <div className="relative bg-white rounded-2xl p-1 shadow-[3px_3px_0px_#e5e7eb] inline-flex border border-gray-300 overflow-hidden">
             {/* Efeito de brilho */}
             <span className="absolute top-0 left-0 w-12 h-12 bg-[#C5837B] rounded-full blur-2xl opacity-20 animate-pulse pointer-events-none" />
@@ -212,7 +216,7 @@ export default function PlanosPage() {
             />
             <button
               onClick={() => handleToggleBilling("mensal")}
-              className={`relative z-10 px-8 py-2 rounded-xl font-medium transition-colors duration-300 ${billingCycle === "mensal"
+              className={`relative z-10 px-4 sm:px-8 py-2 rounded-xl font-medium text-sm sm:text-base transition-colors duration-300 ${billingCycle === "mensal"
                 ? "text-gray-900"
                 : "text-gray-600 hover:text-gray-900"
                 }`}
@@ -221,7 +225,7 @@ export default function PlanosPage() {
             </button>
             <button
               onClick={() => handleToggleBilling("anual")}
-              className={`relative z-10 px-8 py-2 rounded-xl font-medium transition-colors duration-300 ${billingCycle === "anual"
+              className={`relative z-10 px-4 sm:px-8 py-2 rounded-xl font-medium text-sm sm:text-base transition-colors duration-300 ${billingCycle === "anual"
                 ? "text-gray-900"
                 : "text-gray-600 hover:text-gray-900"
                 }`}
@@ -232,48 +236,49 @@ export default function PlanosPage() {
         </div>
 
         {/* Cards de Planos */}
-        <div className="flex justify-center mx-auto gap-0 pt-4">
-          {/* Card de Plano Gratuito Fixo */}
-          <div
-            ref={(el) => {
-              if (el) cardsRef.current[0] = el;
-            }}
-            className="flex flex-col w-[300px] flex-shrink-0"
-          >
-            <div className="relative bg-white overflow-hidden flex-1 flex flex-col border border-gray-300 shadow-[3px_3px_0px_#e5e7eb] rounded-l-2xl">
+        <div className="w-full pb-4 px-2 sm:px-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:flex xl:justify-center mx-auto gap-4 lg:gap-0 pt-4">
+            {/* Card de Plano Gratuito Fixo */}
+            <div
+              ref={(el) => {
+                if (el) cardsRef.current[0] = el;
+              }}
+              className="flex flex-col w-full xl:w-[300px] xl:flex-shrink-0"
+            >
+            <div className="relative bg-white overflow-hidden flex-1 flex flex-col border border-gray-300 shadow-[3px_3px_0px_#e5e7eb] rounded-2xl xl:rounded-l-2xl xl:rounded-r-none">
 
-              <div className="p-8 flex-1 flex flex-col">
+              <div className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col">
                 {/* Título centralizado */}
-                <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 text-center mb-2">
                   Gratuito
                 </h3>
 
                 {/* Descrição */}
-                <p className="text-gray-600 text-sm text-center mb-6">
+                <p className="text-gray-600 text-xs sm:text-sm text-center mb-4 sm:mb-6">
                   Perfeito para começar e testar nossa plataforma
                 </p>
 
                 {/* Preço */}
-                <div className="mb-6 text-center">
+                <div className="mb-4 sm:mb-6 text-center">
                   <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-4xl font-bold text-gray-900 font-mono tracking-tight">
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 font-mono tracking-tight">
                       R$ 0,00
                     </span>
-                    <span className="text-gray-500 text-sm font-medium">
+                    <span className="text-gray-500 text-xs sm:text-sm font-medium">
                       BRL/Mês
                     </span>
                   </div>
                 </div>
 
                 {/* Botão no lugar do badge */}
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <Button variant="primary" size="md" disabled fullWidth>
                     Plano Atual
                   </Button>
                 </div>
 
                 {/* Features */}
-                <ul className="space-y-3 flex-1">
+                <ul className="space-y-2 sm:space-y-3 flex-1">
                   <li className="flex items-start gap-2">
                     <svg
                       className="w-4 h-4 text-gray-900 flex-shrink-0 mt-0.5"
@@ -286,7 +291,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">Até 1 empresa</span>
+                    <span className="text-gray-700 text-xs sm:text-sm">Até 1 empresa</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <svg
@@ -300,7 +305,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 text-xs sm:text-sm">
                       Até 3 usuários
                     </span>
                   </li>
@@ -316,7 +321,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 text-xs sm:text-sm">
                       Funcionalidades básicas
                     </span>
                   </li>
@@ -332,7 +337,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 text-xs sm:text-sm">
                       Suporte por email
                     </span>
                   </li>
@@ -349,49 +354,49 @@ export default function PlanosPage() {
                 ref={(el) => {
                   if (el) cardsRef.current[index + 1] = el;
                 }}
-                className="flex flex-col w-[300px] flex-shrink-0 relative"
+                className="flex flex-col w-full xl:w-[300px] xl:flex-shrink-0 relative"
               >
                 {/* Badge Recomendado - Pill flutuante no topo */}
                 {plan.recommended && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                    <span className="bg-[#F5D2D2] text-[#C5837B] text-xs font-semibold px-4 py-1.5 border border-[#C5837B] rounded-full whitespace-nowrap shadow-sm">
+                    <span className="bg-[#F5D2D2] text-[#C5837B] text-xs font-semibold px-3 sm:px-4 py-1.5 border border-[#C5837B] rounded-full whitespace-nowrap shadow-sm">
                       Recomendado para você
                     </span>
                   </div>
                 )}
 
                 <div
-                  className={`relative bg-white overflow-hidden flex-1 flex flex-col shadow-[3px_3px_0px_#e5e7eb] ${
-                    plan.recommended 
+                  className={`relative bg-white overflow-hidden flex-1 flex flex-col shadow-[3px_3px_0px_#e5e7eb] rounded-2xl xl:rounded-none ${
+                    plan.recommended
                       ? `border-2 border-[#C5837B]`
                       : `border border-gray-300`
                   }`}
                 >
-                  <div className="p-8 flex-1 flex flex-col">
+                  <div className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col">
                     {/* Título centralizado */}
-                    <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 text-center mb-2">
                       {plan.name}
                     </h3>
 
                     {/* Descrição */}
-                    <p className="text-gray-600 text-sm text-center mb-6">
+                    <p className="text-gray-600 text-xs sm:text-sm text-center mb-4 sm:mb-6">
                       {plan.description}
                     </p>
 
                     {/* Preço */}
-                    <div className="mb-6 text-center">
+                    <div className="mb-4 sm:mb-6 text-center">
                       {Number(plan.price) === 0 ? (
                         <div className="flex items-baseline justify-center gap-2">
-                          <span className="text-4xl font-bold text-gray-900 font-mono tracking-tight">
+                          <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 font-mono tracking-tight">
                             R$ 0,00
                           </span>
-                          <span className="text-gray-500 text-sm font-medium">
+                          <span className="text-gray-500 text-xs sm:text-sm font-medium">
                             BRL/Mês
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-baseline justify-center gap-2">
-                          <span className="text-4xl font-bold text-gray-900 font-mono tracking-tight">
+                          <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 font-mono tracking-tight">
                             R$
                           </span>
                           <NumberFlow
@@ -401,9 +406,9 @@ export default function PlanosPage() {
                               maximumFractionDigits: 2,
                             }}
                             locales="pt-BR"
-                            className="text-4xl font-bold text-gray-900 font-mono tracking-tight"
+                            className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 font-mono tracking-tight"
                           />
-                          <span className="text-gray-500 text-sm font-medium">
+                          <span className="text-gray-500 text-xs sm:text-sm font-medium">
                             {billingCycle === "mensal" ? "BRL/Mês" : "BRL/Ano"}
                           </span>
                         </div>
@@ -411,7 +416,7 @@ export default function PlanosPage() {
                     </div>
 
                     {/* Botão no lugar do badge */}
-                    <div className="mb-6">
+                    <div className="mb-4 sm:mb-6">
                       <Button
                         variant="primary"
                         size="md"
@@ -423,7 +428,7 @@ export default function PlanosPage() {
                     </div>
 
                     {/* Features */}
-                    <ul className="space-y-3 flex-1">
+                    <ul className="space-y-2 sm:space-y-3 flex-1">
                       {plan.features.map((feature, featureIndex) => (
                         <li key={featureIndex} className="flex items-start gap-2">
                           <svg
@@ -437,7 +442,7 @@ export default function PlanosPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          <span className="text-gray-700 text-sm">{feature}</span>
+                          <span className="text-gray-700 text-xs sm:text-sm">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -452,37 +457,37 @@ export default function PlanosPage() {
             ref={(el) => {
               if (el) cardsRef.current[plans.length + 1] = el;
             }}
-            className="flex flex-col w-[300px] flex-shrink-0"
+            className="flex flex-col w-full xl:w-[300px] xl:flex-shrink-0"
           >
-            <div className="relative bg-white overflow-hidden flex-1 flex flex-col border border-gray-300 shadow-[3px_3px_0px_#e5e7eb] rounded-r-2xl">
-              <div className="p-8 flex-1 flex flex-col">
+            <div className="relative bg-white overflow-hidden flex-1 flex flex-col border border-gray-300 shadow-[3px_3px_0px_#e5e7eb] rounded-2xl xl:rounded-r-2xl xl:rounded-l-none">
+              <div className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col">
                 {/* Título centralizado */}
-                <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 text-center mb-2">
                   Enterprise
                 </h3>
 
                 {/* Descrição */}
-                <p className="text-gray-600 text-sm text-center mb-6">
+                <p className="text-gray-600 text-xs sm:text-sm text-center mb-4 sm:mb-6">
                   Plano personalizado para grandes empresas
                 </p>
 
                 {/* Preço */}
-                <div className="mb-6 text-center">
+                <div className="mb-4 sm:mb-6 text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
-                    <span className="text-4xl font-bold text-gray-900 font-mono tracking-tight">
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 font-mono tracking-tight">
                       Personalizado
                     </span>
-                    <span className="text-gray-500 text-sm font-medium">
+                    <span className="text-gray-500 text-xs sm:text-sm font-medium">
                       Sob consulta
                     </span>
                   </div>
                 </div>
 
                 {/* Botão */}
-                <div className="mb-6">
-                  <Button 
-                    variant="primary" 
-                    size="md" 
+                <div className="mb-4 sm:mb-6">
+                  <Button
+                    variant="primary"
+                    size="md"
                     fullWidth
                     onClick={() => window.location.href = 'mailto:contato@glowy.com?subject=Interesse em Plano Enterprise'}
                   >
@@ -491,7 +496,7 @@ export default function PlanosPage() {
                 </div>
 
                 {/* Features */}
-                <ul className="space-y-3 flex-1">
+                <ul className="space-y-2 sm:space-y-3 flex-1">
                   <li className="flex items-start gap-2">
                     <svg
                       className="w-4 h-4 text-gray-900 flex-shrink-0 mt-0.5"
@@ -504,7 +509,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">Empresas ilimitadas</span>
+                    <span className="text-gray-700 text-xs sm:text-sm">Empresas ilimitadas</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <svg
@@ -518,7 +523,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 text-xs sm:text-sm">
                       Usuários ilimitados
                     </span>
                   </li>
@@ -534,7 +539,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 text-xs sm:text-sm">
                       Suporte prioritário 24/7
                     </span>
                   </li>
@@ -550,7 +555,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 text-xs sm:text-sm">
                       Gerente de conta dedicado
                     </span>
                   </li>
@@ -566,7 +571,7 @@ export default function PlanosPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 text-xs sm:text-sm">
                       Customizações sob demanda
                     </span>
                   </li>
@@ -575,10 +580,11 @@ export default function PlanosPage() {
             </div>
           </div>
         </div>
+        </div>
 
         {/* FAQ ou Info Adicional */}
-        <div className="mt-16 text-center">
-          <p className="text-gray-600">
+        <div className="mt-8 sm:mt-12 md:mt-16 text-center px-4">
+          <p className="text-sm sm:text-base text-gray-600">
             Precisa de mais informações?{" "}
             <a href="#" className="text-[#C5837B] font-medium hover:underline">
               Entre em contato com nossa equipe

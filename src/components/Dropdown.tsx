@@ -183,7 +183,7 @@ export default function Dropdown({
         (placement === "right" ? (
           <div
             ref={menuRef}
-            className="fixed w-56 bg-white rounded-2xl shadow-[3px_3px_0px_#e5e7eb] py-1 z-50 border border-gray-300 overflow-hidden"
+            className="fixed min-w-56 max-w-md bg-white rounded-2xl shadow-[3px_3px_0px_#e5e7eb] py-1 z-50 border border-gray-300 overflow-hidden max-h-[90vh] overflow-y-auto"
             style={{
               top: menuPos?.top ?? 0,
               left: menuPos?.left ?? 0,
@@ -201,7 +201,7 @@ export default function Dropdown({
         ) : (
           <div
             ref={menuRef}
-            className={`absolute ${smartPosition.align === "right" ? "right-0" : "left-0"} ${smartPosition.position === "top" ? "bottom-full mb-2" : "mt-2"} w-56 bg-white rounded-2xl shadow-[3px_3px_0px_#e5e7eb] py-1 z-50 border border-gray-300 overflow-hidden`}
+            className={`absolute ${smartPosition.align === "right" ? "right-0" : "left-0"} ${smartPosition.position === "top" ? "bottom-full mb-2" : "mt-2"} w-56 bg-white rounded-2xl shadow-[3px_3px_0px_#e5e7eb] py-1 z-50 border border-gray-300 overflow-hidden max-h-[90vh] overflow-y-auto`}
             style={{
               transformOrigin:
                 smartPosition.position === "top"

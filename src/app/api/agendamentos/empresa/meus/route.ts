@@ -8,9 +8,10 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const status = searchParams.get("status");
+    const profissionalId = searchParams.get("profissionalId");
 
     console.log('🔍 Tentando buscar agendamentos da empresa');
-    console.log('📝 Filtros:', { startDate, endDate, status });
+    console.log('📝 Filtros:', { startDate, endDate, status, profissionalId });
 
     // Autenticar usando o middleware padrão
     const auth = await authMiddleware(request);
@@ -26,48 +27,101 @@ export async function GET(request: NextRequest) {
       tipoUsuario: auth.user.tipoUsuario
     });
 
-    // Buscar TODAS as empresas onde o usuário é dono
-    const todasEmpresas = await prisma.empresa.findMany({
-      where: {
-        donoId: auth.user.id,
-        ativo: true
-      },
-      select: {
-        id: true,
-        nomeEmpresa: true,
-        nomeFantasia: true
-      }
-    });
+    // Verificar se o usuário é dono ou convidado
+    const isDono = auth.user.tipoUsuario === 'dono';
+    let empresaIds: string[] = [];
+    let empresasInfo: Array<{ id: string; nome: string }> = [];
 
-    console.log("🏢 Empresas do usuário:", {
-      userId: auth.user.id,
-      userEmail: auth.user.email,
-      totalEmpresas: todasEmpresas.length,
-      empresas: todasEmpresas.map(e => ({
+    if (isDono) {
+      // Buscar TODAS as empresas onde o usuário é dono
+      const todasEmpresas = await prisma.empresa.findMany({
+        where: {
+          donoId: auth.user.id,
+          ativo: true
+        },
+        select: {
+          id: true,
+          nomeEmpresa: true,
+          nomeFantasia: true
+        }
+      });
+
+      console.log("🏢 Empresas do usuário (dono):", {
+        userId: auth.user.id,
+        userEmail: auth.user.email,
+        totalEmpresas: todasEmpresas.length,
+        empresas: todasEmpresas.map(e => ({
+          id: e.id,
+          nome: e.nomeFantasia || e.nomeEmpresa
+        }))
+      });
+
+      if (todasEmpresas.length === 0) {
+        return NextResponse.json({
+          success: true,
+          agendamentos: [],
+          message: "Nenhuma empresa encontrada para este usuário"
+        });
+      }
+
+      empresaIds = todasEmpresas.map(e => e.id);
+      empresasInfo = todasEmpresas.map(e => ({
         id: e.id,
         nome: e.nomeFantasia || e.nomeEmpresa
-      }))
-    });
-
-    if (todasEmpresas.length === 0) {
-      return NextResponse.json({
-        success: true,
-        agendamentos: [],
-        message: "Nenhuma empresa encontrada para este usuário"
+      }));
+    } else {
+      // Usuário é convidado - buscar empresa onde ele é funcionário
+      const funcionario = await prisma.funcionario.findFirst({
+        where: {
+          userId: auth.user.id,
+          ativo: true
+        },
+        select: {
+          empresaId: true,
+          empresa: {
+            select: {
+              id: true,
+              nomeEmpresa: true,
+              nomeFantasia: true
+            }
+          }
+        }
       });
-    }
 
-    // IDs de todas as empresas do usuário
-    const empresaIds = todasEmpresas.map(e => e.id);
+      if (!funcionario) {
+        return NextResponse.json({
+          success: true,
+          agendamentos: [],
+          message: "Nenhuma empresa encontrada para este funcionário"
+        });
+      }
+
+      empresaIds = [funcionario.empresaId];
+      empresasInfo = [{
+        id: funcionario.empresa.id,
+        nome: funcionario.empresa.nomeFantasia || funcionario.empresa.nomeEmpresa
+      }];
+      console.log("🏢 Empresa do funcionário:", funcionario.empresaId);
+    }
 
     console.log('🔍 IDs das empresas para buscar agendamentos:', empresaIds);
 
-    // Construir filtros para buscar em todas as empresas do usuário
+    // Construir filtros para buscar agendamentos
     const where: any = {
       empresaId: {
         in: empresaIds
       }
     };
+
+    // Se não for dono, filtrar apenas agendamentos do próprio funcionário
+    if (!isDono) {
+      where.profissionalId = auth.user.id;
+      console.log('👤 Filtrando agendamentos apenas do funcionário:', auth.user.id);
+    } else if (profissionalId && profissionalId !== 'todos') {
+      // Se o dono selecionou um profissional específico, filtrar por ele
+      where.profissionalId = profissionalId;
+      console.log('👤 Filtrando agendamentos do profissional selecionado:', profissionalId);
+    }
 
     // Filtrar por data se fornecido
     if (startDate && endDate) {
@@ -145,11 +199,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       agendamentos: agendamentosFormatados,
-      empresas: todasEmpresas.map(e => ({
-        id: e.id,
-        nome: e.nomeFantasia || e.nomeEmpresa
-      })),
-      totalEmpresas: todasEmpresas.length
+      empresas: empresasInfo,
+      totalEmpresas: empresasInfo.length
     });
 
   } catch (error) {

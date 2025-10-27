@@ -26,7 +26,6 @@ export default function Login({ onToggleToSignup }: LoginProps) {
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
   const { success, error: showError } = useToast();
 
-  const logoRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -123,15 +122,9 @@ export default function Login({ onToggleToSignup }: LoginProps) {
   useEffect(() => {
     const tl = gsap.timeline();
     tl.fromTo(
-      logoRef.current,
-      { opacity: 0, y: -20, scale: 0.8 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.7)" },
-    )
-      .fromTo(
         titleRef.current,
         { opacity: 0, y: 20 },
         { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
-        "-=0.3",
       )
       .fromTo(
         subtitleRef.current,
@@ -155,15 +148,6 @@ export default function Login({ onToggleToSignup }: LoginProps) {
 
   return (
     <div className="w-full max-w-md mx-auto px-4 sm:px-0">
-      {/* Logo do App */}
-      <div ref={logoRef} className="flex justify-start mb-4 sm:mb-6">
-        <img
-          src="/assets/logo.png"
-          alt="Logo do App"
-          className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover"
-        />
-      </div>
-
       <h2
         ref={titleRef}
         className="text-xl sm:text-2xl font-bold text-left text-gray-800 mb-2"

@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 // --- Utilitário de Classe ---
+/**
+ * Concatena nomes de classe de forma condicional.
+ * @param args Argumentos que podem ser strings, números ou objetos.
+ * @returns Uma string única de nomes de classe.
+ */
 function cn(...args: (string | object | null | undefined)[]): string {
   let result = "";
   for (const arg of args) {
@@ -23,14 +29,25 @@ function cn(...args: (string | object | null | undefined)[]): string {
   return result;
 }
 
+// --- Definição do Componente Tooltip ---
+
 export interface TooltipProps {
+  /** O elemento que aciona o tooltip (o filho) */
   children: React.ReactNode;
-  content: string;
+  /** O texto ou JSX a ser exibido dentro do tooltip */
+  content: string | React.ReactNode;
+  /** Posição do tooltip em relação ao acionador */
   position?: "top" | "bottom" | "left" | "right";
+  /** Atraso em milissegundos antes de mostrar o tooltip */
   delay?: number;
+  /** Classes CSS adicionais para o contíner do tooltip */
   className?: string;
 }
 
+/**
+ * Um componente Tooltip que aparece ao passar o mouse sobre um elemento filho,
+ * usando um Portal para renderizar no corpo do documento.
+ */
 export default function Tooltip({
   children,
   content,
@@ -39,76 +56,115 @@ export default function Tooltip({
   className = "",
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const triggerRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // NOVO ESTADO: Controla se o tooltip está no DOM para animar a saída
+  const [isRendered, setIsRendered] = useState(false);
 
+  const [tooltipPosition, setTooltipPosition] = useState({ top: -9999, left: -9999 });
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Refs para os timeouts de "mostrar" e "esconder"
+  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Agenda a exibição do tooltip após o atraso especificado.
+   */
   const showTooltip = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    // Limpa qualquer timeout de "esconder" (unmount) pendente
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
     }
-    timeoutRef.current = setTimeout(() => {
+    // Limpa timeout de "mostrar" anterior
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+    }
+
+    // 1. Monta o componente no DOM (invisível)
+    setIsRendered(true);
+
+    // 2. Agenda a animação de "entrada"
+    showTimeoutRef.current = setTimeout(() => {
       setIsVisible(true);
-      updatePosition();
     }, delay);
   };
 
+  /**
+   * Inicia a animação de "saída" e agenda o "unmount" do tooltip.
+   */
   const hideTooltip = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    // Limpa qualquer timeout de "mostrar" pendente
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
     }
+
+    // 1. Inicia a animação de "saída" (fade/blur/scale out)
     setIsVisible(false);
+
+    // 2. Agenda o "unmount" do DOM para depois da animação (300ms)
+    hideTimeoutRef.current = setTimeout(() => {
+      setIsRendered(false);
+    }, 300); // Duração da animação (deve corresponder ao duration-300)
   };
 
-  const updatePosition = () => {
-    if (!triggerRef.current || !tooltipRef.current) return;
+  /**
+   * Calcula e atualiza a posição do tooltip na tela,
+   * ajustando para evitar que saia da viewport.
+   */
+  const updatePosition = useCallback(() => {
+    if (typeof window === 'undefined' || !triggerRef.current || !tooltipRef.current) return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
-    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    const padding = 8;
 
     let top = 0;
     let left = 0;
 
     switch (position) {
       case "top":
-        top = triggerRect.top + scrollY - tooltipRect.height - 8;
-        left =
-          triggerRect.left +
-          scrollX +
-          (triggerRect.width - tooltipRect.width) / 2;
+        top = triggerRect.top - tooltipRect.height - padding;
+        left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
         break;
       case "bottom":
-        top = triggerRect.bottom + scrollY + 8;
-        left =
-          triggerRect.left +
-          scrollX +
-          (triggerRect.width - tooltipRect.width) / 2;
+        top = triggerRect.bottom + padding;
+        left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
         break;
       case "left":
-        top =
-          triggerRect.top +
-          scrollY +
-          (triggerRect.height - tooltipRect.height) / 2;
-        left = triggerRect.left + scrollX - tooltipRect.width - 8;
+        top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
+        left = triggerRect.left - tooltipRect.width - padding;
         break;
       case "right":
-        top =
-          triggerRect.top +
-          scrollY +
-          (triggerRect.height - tooltipRect.height) / 2;
-        left = triggerRect.right + scrollX + 8;
+        top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
+        left = triggerRect.right + padding;
         break;
     }
 
-    setTooltipPosition({ top, left });
-  };
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    if (left < padding) {
+      left = padding;
+    } else if (left + tooltipRect.width > viewportWidth - padding) {
+      left = viewportWidth - tooltipRect.width - padding;
+    }
+
+    if (top < padding) {
+      top = padding;
+    } else if (top + tooltipRect.height > viewportHeight - padding) {
+      top = viewportHeight - tooltipRect.height - padding;
+    }
+
+    setTooltipPosition({ top: top, left: left });
+  }, [position]);
 
   useEffect(() => {
-    if (isVisible) {
-      updatePosition();
+    // Recalcula a posição SOMENTE se estiver visível e renderizado
+    if (isRendered && isVisible && typeof window !== 'undefined') {
+      const timer = setTimeout(() => {
+        updatePosition();
+      }, 0);
+
       const handleResize = () => updatePosition();
       const handleScroll = () => updatePosition();
 
@@ -116,48 +172,59 @@ export default function Tooltip({
       window.addEventListener("scroll", handleScroll, true);
 
       return () => {
+        clearTimeout(timer);
         window.removeEventListener("resize", handleResize);
         window.removeEventListener("scroll", handleScroll, true);
       };
     }
-  }, [isVisible, position]);
+  }, [isRendered, isVisible, updatePosition]); // Adicionado isRendered
 
+  // Limpa os timeouts se o componente for desmontado
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
       }
     };
   }, []);
 
+  /**
+   * Retorna as classes CSS para a seta externa (borda) do tooltip.
+   */
   const getArrowClasses = () => {
     const baseClasses = "absolute w-0 h-0";
     switch (position) {
       case "top":
         return cn(
           baseClasses,
-          "top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-200",
+          "top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-300",
         );
       case "bottom":
         return cn(
           baseClasses,
-          "bottom-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-200",
+          "bottom-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-300",
         );
       case "left":
         return cn(
           baseClasses,
-          "left-full top-1/2 transform -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-200",
+          "left-full top-1/2 transform -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-300",
         );
       case "right":
         return cn(
           baseClasses,
-          "right-full top-1/2 transform -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-200",
+          "right-full top-1/2 transform -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-300",
         );
       default:
         return baseClasses;
     }
   };
 
+  /**
+   * Retorna as classes CSS para a seta interna (fundo) do tooltip.
+   */
   const getArrowInnerClasses = () => {
     const baseClasses = "absolute w-0 h-0";
     switch (position) {
@@ -186,39 +253,66 @@ export default function Tooltip({
     }
   };
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // ATUALIZADO: Condição de renderização agora usa `isRendered`
+  const tooltipContent = isMounted && isRendered && typeof window !== 'undefined' ? (
+    <div
+      ref={tooltipRef}
+      className={cn(
+        "fixed z-[9999] px-3 py-2 text-sm font-medium text-gray-700 bg-white",
+        "border border-gray-300 rounded-[16px]", // Bordas e arredondamento
+        "shadow-[3px_3px_0px_#e5e7eb]", // Sombra de "borda dupla"
+        "pointer-events-none whitespace-nowrap", // Impede que o mouse interaja com o tooltip
+        className,
+
+        // --- ANIMAÇÃO DE ENTRADA E SAÍDA (FADE, BLUR, SCALE) ---
+        "transition-all duration-300 ease-in-out", // Aumentado para 300ms
+
+        // Estado "Para" (visível) - usa `isVisible`
+        isVisible && tooltipPosition.top !== -9999
+          ? "opacity-100 blur-0 scale-100"
+          // Estado "De" (oculto) - usa `isVisible`
+          // Aumentado para blur-lg (16px) para um efeito mais forte
+          : "opacity-0 blur-lg scale-95",
+      )}
+      style={{
+        top: `${tooltipPosition.top}px`,
+        left: `${tooltipPosition.left}px`,
+      }}
+      role="tooltip"
+    >
+      {content}
+
+      {/* Seta externa (borda) */}
+      <div className={getArrowClasses()} />
+
+      {/* Seta interna (fundo) */}
+      <div className={getArrowInnerClasses()} />
+    </div>
+  ) : null;
+
+  const portalTarget = isMounted ? document.body : null;
+
   return (
     <>
-      <div
+      <span
         ref={triggerRef}
         onMouseEnter={showTooltip}
         onMouseLeave={hideTooltip}
-        className="inline-block"
+        onFocus={showTooltip}
+        onBlur={hideTooltip}
+        className="inline-flex items-center justify-center"
+        aria-describedby={isVisible ? "tooltip-content" : undefined}
       >
         {children}
-      </div>
+      </span>
 
-      {isVisible && (
-        <div
-          ref={tooltipRef}
-          className={cn(
-            "fixed z-[99999] px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 shadow-lg",
-            "animate-fade-in pointer-events-none",
-            className,
-          )}
-          style={{
-            top: `${tooltipPosition.top}px`,
-            left: `${tooltipPosition.left}px`,
-          }}
-        >
-          {content}
-
-          {/* Seta externa (borda) */}
-          <div className={getArrowClasses()} />
-
-          {/* Seta interna (fundo) */}
-          <div className={getArrowInnerClasses()} />
-        </div>
-      )}
+      {portalTarget && tooltipContent && createPortal(tooltipContent, portalTarget)}
     </>
   );
 }
+

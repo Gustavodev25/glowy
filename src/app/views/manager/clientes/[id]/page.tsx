@@ -31,13 +31,13 @@ interface Cliente {
   cpf?: string;
   avatarUrl?: string;
   createdAt: string;
-  agendamentos: any[];
-  documentos: any[];
-  respostasFormulario: any[];
+  agendamentos?: any[];
+  documentos?: any[];
+  respostasFormulario?: any[];
   _count: {
     agendamentos: number;
     documentos: number;
-    respostasFormulario: number;
+    respostasFormulario?: number;
   };
 }
 
@@ -203,7 +203,7 @@ export default function ClientePerfilPage() {
           <path d="M19 7h-4l-.001 -4.001z" />
         </svg>
       ),
-      badge: cliente._count.respostasFormulario,
+      badge: cliente._count.respostasFormulario || 0,
     },
   ];
 
@@ -286,7 +286,7 @@ export default function ClientePerfilPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {cliente._count.respostasFormulario}
+                  {cliente._count.respostasFormulario || 0}
                 </p>
                 <p className="text-sm text-gray-600">Anamneses</p>
               </div>
@@ -348,7 +348,7 @@ export default function ClientePerfilPage() {
             <div className="animate-fadeIn">
               <HistoricoTab
                 clienteId={cliente.id}
-                agendamentos={cliente.agendamentos}
+                agendamentos={cliente.agendamentos || []}
               />
             </div>
           )}
@@ -356,7 +356,7 @@ export default function ClientePerfilPage() {
             <div className="animate-fadeIn">
               <DocumentosTab
                 clienteId={cliente.id}
-                documentos={cliente.documentos}
+                documentos={cliente.documentos || []}
                 onUpdate={fetchCliente}
               />
             </div>
@@ -365,7 +365,8 @@ export default function ClientePerfilPage() {
             <div className="animate-fadeIn">
               <AnamneseTab
                 clienteId={cliente.id}
-                respostas={cliente.respostasFormulario}
+                clienteNome={cliente.nome}
+                respostas={cliente.respostasFormulario || []}
                 onUpdate={fetchCliente}
               />
             </div>

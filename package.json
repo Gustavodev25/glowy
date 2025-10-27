@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
-    "scripts": {
+  "scripts": {
         "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev",
         "dev:default": "next dev",
         "dev:ngrok": "next dev --hostname 0.0.0.0",
@@ -12,6 +12,7 @@
         "start": "next start",
         "start:ngrok": "next start --hostname 0.0.0.0",
         "lint": "eslint",
+        "postinstall": "prisma generate",
         "check-encoding": "node scripts/check-encoding.cjs",
         "pre-commit": "npm run check-encoding && npm run lint",
         "ngrok": "ngrok http 3000",

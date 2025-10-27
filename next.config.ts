@@ -13,6 +13,21 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // Incluir Prisma Client e engines no tracing para funções serverless
+  experimental: {
+    serverComponentsExternalPackages: ["@prisma/client", "prisma"],
+    outputFileTracingIncludes: {
+      "/api/:path*": [
+        "./node_modules/@prisma/client/**/*",
+        "./node_modules/.prisma/**/*",
+      ],
+      "/(.*)": [
+        "./node_modules/@prisma/client/**/*",
+        "./node_modules/.prisma/**/*",
+      ],
+    },
+  },
+
   // Next.js 16: Turbopack é o padrão, não precisa de flags experimentais
 
   // Garantir que variáveis de ambiente estejam disponíveis

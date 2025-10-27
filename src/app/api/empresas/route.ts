@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const empresasAntigas = await prisma.empresa.findMany({
       where: {
         ativo: true,
-        donoId: { not: null }, // Apenas empresas com dono válido
+        // donoId é obrigatório no schema; filtro por null é desnecessário
         // Se houver busca por texto
         ...(search && {
           OR: [

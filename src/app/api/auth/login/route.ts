@@ -37,18 +37,34 @@ export async function POST(request: NextRequest) {
   const senha = parsed.data.senha;
 
   try {
-    const user: any = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true, nome: true, email: true, senha: true,
-        failedLoginAttempts: true, lockedUntil: true, createdAt: true,
-        twoFactorEnabled: true,
-        twoFactorMethod: true,
-        twoFactorSecret: true,
-        telefone: true,
-        whatsappPhoneE164: true,
-      },
-    });
+    let user: any;
+    try {
+      // Seleção completa (inclui campos novos de 2FA e segurança)
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true, nome: true, email: true, senha: true,
+          failedLoginAttempts: true, lockedUntil: true, createdAt: true,
+          twoFactorEnabled: true,
+          twoFactorMethod: true,
+          twoFactorSecret: true,
+          telefone: true,
+          whatsappPhoneE164: true,
+        },
+      });
+    } catch (e: any) {
+      // Fallback para bancos que ainda não possuem todas as colunas novas
+      // Evita 500 por "unknown column" (ex.: P2022) em ambiente não migrado
+      console.warn('[login] Falling back to minimal user select due to DB schema mismatch');
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true, nome: true, email: true, senha: true,
+          failedLoginAttempts: true, lockedUntil: true, createdAt: true,
+          // Campos 2FA ausentes serão tratados como desabilitados
+        },
+      });
+    }
 
     // Mitiga enumeração com atraso fixo
     await uniformDelay(300);

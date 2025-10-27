@@ -8,6 +8,8 @@ interface User {
   nome: string;
   email: string;
   tipoUsuario?: "dono" | "usuario";
+  avatarUrl?: string;
+  isAdmin?: boolean;
   empresa?: {
     id: string;
     nomeEmpresa: string;
